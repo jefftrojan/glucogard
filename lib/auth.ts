@@ -14,49 +14,20 @@ export async function signUp(email: string, password: string, fullName: string, 
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        full_name: fullName,
+        role: role,
+      }
+    }
   });
 
   if (authError) {
     throw authError;
   }
 
-  if (authData.user) {
-    // Create profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: authData.user.id,
-        role,
-        full_name: fullName,
-      });
-
-    if (profileError) {
-      throw profileError;
-    }
-
-    // Create role-specific record
-    if (role === 'patient') {
-      const { error: patientError } = await supabase
-        .from('patients')
-        .insert({
-          user_id: authData.user.id,
-        });
-
-      if (patientError) {
-        throw patientError;
-      }
-    } else if (role === 'doctor') {
-      const { error: doctorError } = await supabase
-        .from('doctors')
-        .insert({
-          user_id: authData.user.id,
-        });
-
-      if (doctorError) {
-        throw doctorError;
-      }
-    }
-  }
+  // The database trigger 'on_auth_user_created' will now handle
+  // creating records in 'profiles' and the role-specific table ('patients' or 'doctors').
 
   return authData;
 }
@@ -82,26 +53,51 @@ export async function signOut() {
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  console.log('[getCurrentUser] Attempting to get user session...');
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (authError) {
+    console.error('[getCurrentUser] Error getting auth user:', authError.message);
     return null;
   }
 
-  const { data: profile } = await supabase
+  if (!authUser) {
+    console.log('[getCurrentUser] No authenticated user found in session.');
+    return null;
+  }
+
+  console.log(`[getCurrentUser] Auth user found: ID=${authUser.id}, Email=${authUser.email}`);
+
+  console.log(`[getCurrentUser] Attempting to fetch profile for user ID: ${authUser.id}`);
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, full_name')
-    .eq('user_id', user.id)
+    .eq('user_id', authUser.id)
     .single();
 
+  if (profileError) {
+    console.error(`[getCurrentUser] Error fetching profile for user ID ${authUser.id}:`, profileError.message);
+    // Do not return null immediately if it's a 'PGRST116' (0 rows) error,
+    // as that's handled by the !profile check.
+    // For other errors, it might be appropriate to return null.
+    if (profileError.code !== 'PGRST116') { // PGRST116: "The result contains 0 rows"
+        return null;
+    }
+  }
+
   if (!profile) {
+    console.log(`[getCurrentUser] No profile found for user ID: ${authUser.id}. This will result in a null user object.`);
     return null;
   }
 
-  return {
-    id: user.id,
-    email: user.email!,
+  console.log(`[getCurrentUser] Profile found for user ID ${authUser.id}:`, profile);
+
+  const resultUser: AuthUser = {
+    id: authUser.id,
+    email: authUser.email!,
     role: profile.role,
     full_name: profile.full_name,
   };
+  console.log('[getCurrentUser] Successfully constructed AuthUser object:', resultUser);
+  return resultUser;
 }
