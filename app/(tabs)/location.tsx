@@ -25,7 +25,6 @@ import {
   ExternalLink,
   RefreshCw,
   X,
-  X,
 } from 'lucide-react-native';
 import {
   requestLocationPermission,
