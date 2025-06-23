@@ -41,8 +41,6 @@ import { t } from '@/lib/i18n';
 
 const { width, height } = Dimensions.get('window');
 
-const { width, height } = Dimensions.get('window');
-
 export default function LocationScreen() {
   const { user } = useAuth();
   const [location, setLocation] = useState<LocationData | null>(null);
