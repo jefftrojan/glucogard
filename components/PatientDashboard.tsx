@@ -10,19 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  Heart,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  TrendingUp,
-  Plus,
-  Target,
-  Award,
-  Zap,
-  Calendar,
-  ArrowRight,
-} from 'lucide-react-native';
+import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, TrendingUp, Plus, Target, Award, Zap, Calendar, ArrowRight } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 
@@ -156,6 +144,7 @@ export function PatientDashboard() {
     if (!latestPrediction) return 0;
     return Math.max(0, 100 - latestPrediction.risk_score);
   };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Hero Section */}
@@ -632,7 +621,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // Legacy styles for compatibility
   welcomeCard: {
     backgroundColor: 'white',
     borderRadius: 16,
@@ -745,70 +733,5 @@ const styles = StyleSheet.create({
   newAssessmentButtonText: {
     color: '#0066CC',
     fontWeight: '600',
-  },
-});
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  submissionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  submissionDate: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusReviewed: {
-    backgroundColor: '#D1FAE5',
-  },
-  statusPending: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
-  statusTextReviewed: {
-    color: '#065F46',
-  },
-  statusTextPending: {
-    color: '#92400E',
-  },
-  submissionRisk: {
-    fontSize: 12,
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  submissionRecommendations: {
-    fontSize: 12,
-    color: '#0066CC',
-  },
-  newAssessmentButton: {
-    backgroundColor: 'white',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-    gap: 8,
-    marginBottom: 24,
-  },
-  newAssessmentButtonText: {
-    color: '#0066CC',
-    fontWeight: '600',
-  },
+  }
 });
