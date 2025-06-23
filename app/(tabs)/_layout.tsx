@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, ClipboardList, Stethoscope, User, Brain, MapPin, Settings } from 'lucide-react-native';
+import { Home, Activity, MapPin, User } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
@@ -38,25 +38,13 @@ export default function TabLayout() {
         }}
       />
       
-      {user.role === 'patient' && (
-        <Tabs.Screen
-          name="assessment"
-          options={{
-            title: 'Assessment',
-            tabBarIcon: ({ size, color }) => <ClipboardList size={size} color={color} />,
-          }}
-        />
-      )}
-
-      {user.role === 'patient' && (
-        <Tabs.Screen
-          name="smart-assessment"
-          options={{
-            title: 'Smart Quiz',
-            tabBarIcon: ({ size, color }) => <Brain size={size} color={color} />,
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="assessment"
+        options={{
+          title: 'Health Check',
+          tabBarIcon: ({ size, color }) => <Activity size={size} color={color} />,
+        }}
+      />
 
       <Tabs.Screen
         name="location"
@@ -66,29 +54,11 @@ export default function TabLayout() {
         }}
       />
 
-      {user.role === 'doctor' && (
-        <Tabs.Screen
-          name="patients"
-          options={{
-            title: 'Patients',
-            tabBarIcon: ({ size, color }) => <Stethoscope size={size} color={color} />,
-          }}
-        />
-      )}
-
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Me',
           tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ size, color }) => <Settings size={size} color={color} />,
         }}
       />
     </Tabs>

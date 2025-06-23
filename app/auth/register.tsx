@@ -19,7 +19,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('patient');
+  const [role] = useState<UserRole>('patient'); // Default to patient, no selection needed
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -66,47 +66,6 @@ export default function RegisterScreen() {
       </View>
 
       <View style={styles.form}>
-        <View style={styles.roleSelection}>
-          <Text style={styles.roleLabel}>I am a:</Text>
-          <View style={styles.roleButtons}>
-            <TouchableOpacity
-              style={[
-                styles.roleButton,
-                role === 'patient' && styles.roleButtonActive,
-              ]}
-              onPress={() => setRole('patient')}
-            >
-              <User size={20} color={role === 'patient' ? 'white' : '#0066CC'} />
-              <Text
-                style={[
-                  styles.roleButtonText,
-                  role === 'patient' && styles.roleButtonTextActive,
-                ]}
-              >
-                Patient
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.roleButton,
-                role === 'doctor' && styles.roleButtonActive,
-              ]}
-              onPress={() => setRole('doctor')}
-            >
-              <Stethoscope size={20} color={role === 'doctor' ? 'white' : '#0066CC'} />
-              <Text
-                style={[
-                  styles.roleButtonText,
-                  role === 'doctor' && styles.roleButtonTextActive,
-                ]}
-              >
-                Doctor
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Full Name</Text>
           <TextInput
@@ -202,42 +161,6 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     padding: 24,
-  },
-  roleSelection: {
-    marginBottom: 24,
-  },
-  roleLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 12,
-  },
-  roleButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  roleButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-    backgroundColor: 'white',
-    gap: 8,
-  },
-  roleButtonActive: {
-    backgroundColor: '#0066CC',
-  },
-  roleButtonText: {
-    color: '#0066CC',
-    fontWeight: '500',
-  },
-  roleButtonTextActive: {
-    color: 'white',
   },
   inputGroup: {
     marginBottom: 20,

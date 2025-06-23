@@ -12,7 +12,7 @@ export default function IndexScreen() {
       if (user) {
         router.replace('/(tabs)');
       } else {
-        router.replace('/auth');
+        router.replace('/onboarding');
       }
     }
   }, [user, loading, router]);
