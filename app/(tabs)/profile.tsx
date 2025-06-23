@@ -12,23 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { 
-  User, 
-  LogOut, 
-  Edit3, 
-  Save, 
-  X, 
-  Heart, 
-  Stethoscope,
-  Mail,
-  Calendar,
-  Shield,
-  Settings,
-  Bell,
-  Globe,
-  Database,
-  ChevronRight,
-} from 'lucide-react-native';
+import { User, LogOut, CreditCard as Edit3, Save, X, Heart, Stethoscope, Mail, Calendar, Shield, Settings, Bell, Globe, Database, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { 
