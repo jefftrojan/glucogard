@@ -85,6 +85,8 @@ export default function RegisterScreen() {
         <TouchableOpacity
           style={styles.linkButton}
           onPress={() => router.push('/auth/login')}
+    }
+  }
   inputGroup: {
     marginBottom: 20,
   },
