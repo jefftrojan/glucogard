@@ -150,11 +150,6 @@ export default function LocationScreen() {
     setShowMapModal(true);
   };
 
-  const showFacilityMap = (facility: HealthFacility) => {
-    setSelectedFacility(facility);
-    setShowMapModal(true);
-  };
-
   const callFacility = (phone: string) => {
     Linking.openURL(`tel:${phone}`);
   };
