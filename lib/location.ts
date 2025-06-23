@@ -115,7 +115,11 @@ export async function getCurrentLocation(): Promise<LocationData | null> {
               });
             },
             (error) => {
-              console.error('Web geolocation error:', error);
+              if (error.code === 2) { // POSITION_UNAVAILABLE
+                console.warn('Web geolocation error:', error);
+              } else {
+                console.error('Web geolocation error:', error);
+              }
               resolve(null);
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
