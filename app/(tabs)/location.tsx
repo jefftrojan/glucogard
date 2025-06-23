@@ -580,8 +580,8 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: '#F1F5F9',
     gap: 6,
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0066CC',
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: '#64748B',
   },
