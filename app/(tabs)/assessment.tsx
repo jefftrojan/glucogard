@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Heart, ArrowRight, ArrowLeft, CircleCheck as CheckCircle, Star, Trophy, Target, Zap, Brain, Activity } from 'lucide-react-native';
@@ -483,7 +484,12 @@ const MultipleChoiceQuestion = ({ question, onAnswer }: { question: Question, on
   };
 
   return (
-    <View>
+    <View style={styles.multiChoiceContainer}>
+      <ScrollView 
+        style={styles.optionsScrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
       {question.options?.map((option, index) => (
         <TouchableOpacity
           key={option.id}
@@ -545,14 +551,17 @@ const NumberInputQuestion = ({ question, onAnswer }: { question: Question, onAns
             <Text style={styles.numberKeyText}>{num}</Text>
           </TouchableOpacity>
         ))}
+      </ScrollView>
       </View>
       
-      {value && (
+      <View style={styles.continueButtonContainer}>
+        {selectedOptions.length > 0 && (
         <TouchableOpacity style={styles.continueButton} onPress={handleSubmit}>
           <Text style={styles.continueButtonText}>Continue</Text>
           <ArrowRight size={20} color="white" />
         </TouchableOpacity>
-      )}
+        )}
+      </View>
     </View>
   );
 };
@@ -699,11 +708,12 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   optionsContainer: {
-    gap: 16,
+    flex: 1,
   },
   optionCard: {
     borderRadius: 16,
     padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -745,6 +755,20 @@ const styles = StyleSheet.create({
     color: 'white',
     flex: 1,
   },
+  multiChoiceContainer: {
+    flex: 1,
+    maxHeight: height * 0.6, // Limit height to 60% of screen
+  },
+  optionsScrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  continueButtonContainer: {
+    paddingTop: 16,
+    backgroundColor: 'rgba(0, 102, 204, 0.8)', // Match overlay color
+  },
   continueButton: {
     backgroundColor: '#28A745',
     flexDirection: 'row',
@@ -752,7 +776,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
-    marginTop: 24,
     gap: 8,
   },
   continueButtonText: {
