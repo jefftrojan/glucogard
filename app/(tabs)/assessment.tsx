@@ -1,131 +1,185 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
-  TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ClipboardList, Send } from 'lucide-react-native';
+import { 
+  Heart, 
+  ArrowRight, 
+  ArrowLeft, 
+  CheckCircle, 
+  Star,
+  Trophy,
+  Target,
+  Zap,
+  Brain,
+  Activity
+} from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { 
+  ADAPTIVE_QUESTIONNAIRE, 
+  getNextQuestion, 
+  calculateProgress,
+  validateAnswer,
+  type Question,
+  type QuestionOption 
+} from '@/lib/questionnaire';
 
-interface HealthFormData {
-  age: string;
-  gender: string;
-  weight: string;
-  height: string;
-  activityLevel: string;
-  dietaryHabits: string;
-  familyHistory: string;
-  symptoms: string[];
-  smokingStatus: string;
-  alcoholConsumption: string;
+const { width, height } = Dimensions.get('window');
+
+interface GameState {
+  currentQuestion: Question | null;
+  answers: Record<string, any>;
+  progress: number;
+  score: number;
+  streak: number;
+  badges: string[];
 }
-
-const symptoms = [
-  'Frequent urination',
-  'Excessive thirst',
-  'Unexplained weight loss',
-  'Fatigue',
-  'Blurred vision',
-  'Slow healing wounds',
-  'Frequent infections',
-  'None of the above',
-];
 
 export default function AssessmentScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<HealthFormData>({
-    age: '',
-    gender: '',
-    weight: '',
-    height: '',
-    activityLevel: '',
-    dietaryHabits: '',
-    familyHistory: '',
-    symptoms: [],
-    smokingStatus: '',
-    alcoholConsumption: '',
+  const [gameState, setGameState] = useState<GameState>({
+    currentQuestion: null,
+    answers: {},
+    progress: 0,
+    score: 0,
+    streak: 0,
+    badges: []
   });
+  
+  // Animation values
+  const [slideAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(1));
+  const [progressAnim] = useState(new Animated.Value(0));
 
-  const handleSymptomToggle = (symptom: string) => {
-    if (symptom === 'None of the above') {
-      setFormData({
-        ...formData,
-        symptoms: formData.symptoms.includes(symptom) ? [] : [symptom],
+  useEffect(() => {
+    initializeAssessment();
+  }, []);
+
+  useEffect(() => {
+    // Animate progress bar
+    Animated.timing(progressAnim, {
+      toValue: gameState.progress,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, [gameState.progress]);
+
+  const initializeAssessment = () => {
+    const firstQuestion = ADAPTIVE_QUESTIONNAIRE.questions.find(
+      q => q.id === ADAPTIVE_QUESTIONNAIRE.startQuestionId
+    );
+    
+    setGameState(prev => ({
+      ...prev,
+      currentQuestion: firstQuestion || null
+    }));
+    
+    animateQuestionEntry();
+  };
+
+  const animateQuestionEntry = () => {
+    slideAnim.setValue(width);
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const animateQuestionExit = (callback: () => void) => {
+    Animated.timing(slideAnim, {
+      toValue: -width,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(callback);
+  };
+
+  const celebrateAnswer = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      })
+    ]).start();
+  };
+
+  const handleAnswer = (value: any, option?: QuestionOption) => {
+    if (!gameState.currentQuestion) return;
+
+    celebrateAnswer();
+
+    const newAnswers = {
+      ...gameState.answers,
+      [gameState.currentQuestion.id]: value
+    };
+
+    // Calculate new score and streak
+    const newScore = gameState.score + 10;
+    const newStreak = gameState.streak + 1;
+    const newBadges = [...gameState.badges];
+
+    // Award badges based on progress
+    if (newStreak === 5 && !newBadges.includes('streak-5')) {
+      newBadges.push('streak-5');
+    }
+    if (newStreak === 10 && !newBadges.includes('streak-10')) {
+      newBadges.push('streak-10');
+    }
+
+    const newProgress = calculateProgress(
+      gameState.currentQuestion.id,
+      newAnswers,
+      ADAPTIVE_QUESTIONNAIRE
+    );
+
+    setTimeout(() => {
+      animateQuestionExit(() => {
+        const nextQuestion = getNextQuestion(
+          gameState.currentQuestion!.id,
+          option || null,
+          newAnswers,
+          ADAPTIVE_QUESTIONNAIRE
+        );
+
+        if (nextQuestion) {
+          setGameState({
+            currentQuestion: nextQuestion,
+            answers: newAnswers,
+            progress: newProgress,
+            score: newScore,
+            streak: newStreak,
+            badges: newBadges
+          });
+          animateQuestionEntry();
+        } else {
+          // Assessment complete
+          completeAssessment(newAnswers);
+        }
       });
-    } else {
-      const updatedSymptoms = formData.symptoms.includes(symptom)
-        ? formData.symptoms.filter(s => s !== symptom && s !== 'None of the above')
-        : [...formData.symptoms.filter(s => s !== 'None of the above'), symptom];
-      
-      setFormData({ ...formData, symptoms: updatedSymptoms });
-    }
+    }, 500);
   };
 
-  const generateRiskPrediction = (data: HealthFormData) => {
-    let riskScore = 0;
-    
-    // Age factor
-    const age = parseInt(data.age);
-    if (age >= 45) riskScore += 20;
-    else if (age >= 35) riskScore += 10;
-    
-    // BMI factor
-    const weight = parseFloat(data.weight);
-    const height = parseFloat(data.height) / 100; // convert cm to m
-    if (weight && height) {
-      const bmi = weight / (height * height);
-      if (bmi >= 30) riskScore += 25;
-      else if (bmi >= 25) riskScore += 15;
-    }
-    
-    // Family history
-    if (data.familyHistory === 'yes') riskScore += 15;
-    
-    // Activity level
-    if (data.activityLevel === 'sedentary') riskScore += 15;
-    else if (data.activityLevel === 'light') riskScore += 10;
-    
-    // Symptoms
-    if (data.symptoms.length > 0 && !data.symptoms.includes('None of the above')) {
-      riskScore += data.symptoms.length * 5;
-    }
-    
-    // Smoking
-    if (data.smokingStatus === 'current') riskScore += 10;
-    else if (data.smokingStatus === 'former') riskScore += 5;
-    
-    // Dietary habits
-    if (data.dietaryHabits === 'poor') riskScore += 10;
-    else if (data.dietaryHabits === 'fair') riskScore += 5;
-    
-    // Cap at 100
-    riskScore = Math.min(riskScore, 100);
-    
-    let category: 'low' | 'moderate' | 'critical';
-    if (riskScore < 30) category = 'low';
-    else if (riskScore < 70) category = 'moderate';
-    else category = 'critical';
-    
-    return { riskScore, category };
-  };
-
-  const submitAssessment = async () => {
-    // Validate required fields
-    if (!formData.age || !formData.gender || !formData.weight || !formData.height) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
-    }
-
+  const completeAssessment = async (finalAnswers: Record<string, any>) => {
     setLoading(true);
     try {
       // Get patient ID
@@ -144,7 +198,7 @@ export default function AssessmentScreen() {
         .from('health_submissions')
         .insert({
           patient_id: patientData.id,
-          answers: formData,
+          answers: finalAnswers,
           status: 'pending',
         })
         .select()
@@ -153,7 +207,7 @@ export default function AssessmentScreen() {
       if (submissionError) throw submissionError;
 
       // Generate risk prediction
-      const { riskScore, category } = generateRiskPrediction(formData);
+      const { riskScore, category } = generateRiskPrediction(finalAnswers);
 
       // Create risk prediction
       const { error: predictionError } = await supabase
@@ -166,46 +220,24 @@ export default function AssessmentScreen() {
 
       if (predictionError) throw predictionError;
 
-      // Create initial recommendations based on risk
-      const recommendations = [];
-      
-      if (category === 'critical') {
-        recommendations.push({
-          submission_id: submission.id,
-          content: 'Immediate medical consultation recommended. Please see a healthcare provider within 48 hours for comprehensive diabetes screening.',
-          type: 'clinical' as const,
-        });
-      }
-      
-      if (formData.activityLevel === 'sedentary') {
-        recommendations.push({
-          submission_id: submission.id,
-          content: 'Increase physical activity to at least 150 minutes of moderate exercise per week. Start with 10-minute walks after meals.',
-          type: 'lifestyle' as const,
-        });
-      }
-      
-      if (formData.dietaryHabits === 'poor') {
-        recommendations.push({
-          submission_id: submission.id,
-          content: 'Adopt a balanced diet rich in vegetables, lean proteins, and whole grains. Limit processed foods and sugary beverages.',
-          type: 'lifestyle' as const,
-        });
-      }
-
+      // Create recommendations
+      const recommendations = generateRecommendations(finalAnswers, category);
       if (recommendations.length > 0) {
         const { error: recommendationError } = await supabase
           .from('recommendations')
-          .insert(recommendations);
+          .insert(
+            recommendations.map(rec => ({
+              submission_id: submission.id,
+              content: rec.content,
+              type: rec.type,
+            }))
+          );
 
         if (recommendationError) throw recommendationError;
       }
 
-      Alert.alert(
-        'Assessment Submitted',
-        'Your health assessment has been submitted successfully. Check your dashboard for results.',
-        [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
-      );
+      // Show completion celebration
+      showCompletionCelebration();
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -213,357 +245,652 @@ export default function AssessmentScreen() {
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <ClipboardList size={24} color="#0066CC" />
-        <Text style={styles.title}>Health Assessment</Text>
-      </View>
+  const showCompletionCelebration = () => {
+    Alert.alert(
+      '🎉 Assessment Complete!',
+      `Congratulations! You've earned ${gameState.score + 50} points and completed your health journey. Your personalized insights are ready!`,
+      [
+        {
+          text: 'View Results',
+          onPress: () => router.replace('/(tabs)')
+        }
+      ]
+    );
+  };
 
-      <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Basic Information</Text>
-        
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Age *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.age}
-            onChangeText={(text) => setFormData({ ...formData, age: text })}
-            placeholder="Enter your age"
-            keyboardType="numeric"
+  const generateRiskPrediction = (answers: Record<string, any>) => {
+    let riskScore = 0;
+    
+    // Age factor
+    const age = parseInt(answers.age || '0');
+    if (age >= 45) riskScore += 20;
+    else if (age >= 35) riskScore += 10;
+    
+    // BMI factor
+    const weight = parseFloat(answers.weight || '0');
+    const height = parseFloat(answers.height || '0') / 100;
+    if (weight && height) {
+      const bmi = weight / (height * height);
+      if (bmi >= 30) riskScore += 25;
+      else if (bmi >= 25) riskScore += 15;
+    }
+    
+    // Other factors
+    if (answers['family-history'] === 'yes') riskScore += 15;
+    if (answers['activity-level'] === 'sedentary') riskScore += 15;
+    if (answers['diet-habits'] === 'poor') riskScore += 10;
+    if (answers.smoking === 'current') riskScore += 10;
+    
+    // Symptoms
+    const symptoms = answers.symptoms || [];
+    if (Array.isArray(symptoms) && symptoms.length > 0 && !symptoms.includes('none')) {
+      riskScore += symptoms.length * 5;
+    }
+    
+    riskScore = Math.min(riskScore, 100);
+    
+    let category: 'low' | 'moderate' | 'critical';
+    if (riskScore < 30) category = 'low';
+    else if (riskScore < 70) category = 'moderate';
+    else category = 'critical';
+    
+    return { riskScore, category };
+  };
+
+  const generateRecommendations = (answers: Record<string, any>, category: string) => {
+    const recommendations = [];
+    
+    if (category === 'critical') {
+      recommendations.push({
+        content: 'Schedule an immediate consultation with a healthcare provider for comprehensive diabetes screening.',
+        type: 'clinical' as const,
+      });
+    }
+    
+    if (answers['activity-level'] === 'sedentary') {
+      recommendations.push({
+        content: 'Start with 10-minute walks after meals and gradually increase to 150 minutes of moderate exercise per week.',
+        type: 'lifestyle' as const,
+      });
+    }
+    
+    if (answers['diet-habits'] === 'poor') {
+      recommendations.push({
+        content: 'Focus on whole foods: vegetables, lean proteins, and whole grains. Limit processed foods and sugary drinks.',
+        type: 'lifestyle' as const,
+      });
+    }
+    
+    return recommendations;
+  };
+
+  const renderProgressHeader = () => (
+    <View style={styles.progressHeader}>
+      <View style={styles.progressContainer}>
+        <View style={styles.progressTrack}>
+          <Animated.View 
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: ['0%', '100%'],
+                  extrapolate: 'clamp',
+                })
+              }
+            ]} 
           />
         </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Gender *</Text>
-          <View style={styles.radioGroup}>
-            {['Male', 'Female', 'Other'].map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.radioButton,
-                  formData.gender === option.toLowerCase() && styles.radioButtonActive,
-                ]}
-                onPress={() => setFormData({ ...formData, gender: option.toLowerCase() })}
-              >
-                <Text
-                  style={[
-                    styles.radioButtonText,
-                    formData.gender === option.toLowerCase() && styles.radioButtonTextActive,
-                  ]}
-                >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <Text style={styles.progressText}>{Math.round(gameState.progress)}%</Text>
+      </View>
+      
+      <View style={styles.gameStats}>
+        <View style={styles.statItem}>
+          <Star size={16} color="#FFD700" />
+          <Text style={styles.statText}>{gameState.score}</Text>
         </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>Weight (kg) *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.weight}
-              onChangeText={(text) => setFormData({ ...formData, weight: text })}
-              placeholder="70"
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>Height (cm) *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.height}
-              onChangeText={(text) => setFormData({ ...formData, height: text })}
-              placeholder="170"
-              keyboardType="numeric"
-            />
-          </View>
+        <View style={styles.statItem}>
+          <Zap size={16} color="#FF6B35" />
+          <Text style={styles.statText}>{gameState.streak}</Text>
         </View>
-
-        <Text style={styles.sectionTitle}>Lifestyle Factors</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Activity Level</Text>
-          <View style={styles.radioGroup}>
-            {[
-              { key: 'sedentary', label: 'Sedentary' },
-              { key: 'light', label: 'Light' },
-              { key: 'moderate', label: 'Moderate' },
-              { key: 'active', label: 'Very Active' },
-            ].map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.radioButton,
-                  formData.activityLevel === option.key && styles.radioButtonActive,
-                ]}
-                onPress={() => setFormData({ ...formData, activityLevel: option.key })}
-              >
-                <Text
-                  style={[
-                    styles.radioButtonText,
-                    formData.activityLevel === option.key && styles.radioButtonTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <View style={styles.statItem}>
+          <Trophy size={16} color="#4ECDC4" />
+          <Text style={styles.statText}>{gameState.badges.length}</Text>
         </View>
+      </View>
+    </View>
+  );
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Dietary Habits</Text>
-          <View style={styles.radioGroup}>
-            {[
-              { key: 'excellent', label: 'Excellent' },
-              { key: 'good', label: 'Good' },
-              { key: 'fair', label: 'Fair' },
-              { key: 'poor', label: 'Poor' },
-            ].map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.radioButton,
-                  formData.dietaryHabits === option.key && styles.radioButtonActive,
-                ]}
-                onPress={() => setFormData({ ...formData, dietaryHabits: option.key })}
-              >
-                <Text
-                  style={[
-                    styles.radioButtonText,
-                    formData.dietaryHabits === option.key && styles.radioButtonTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+  const renderQuestion = () => {
+    if (!gameState.currentQuestion) return null;
+
+    const question = gameState.currentQuestion;
+    
+    return (
+      <Animated.View 
+        style={[
+          styles.questionContainer,
+          {
+            transform: [
+              { translateX: slideAnim },
+              { scale: scaleAnim }
+            ]
+          }
+        ]}
+      >
+        <View style={styles.questionHeader}>
+          <View style={styles.questionIcon}>
+            <Brain size={32} color="#0066CC" />
           </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Health History</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Family History of Diabetes</Text>
-          <View style={styles.radioGroup}>
-            {[
-              { key: 'yes', label: 'Yes' },
-              { key: 'no', label: 'No' },
-              { key: 'unknown', label: 'Unknown' },
-            ].map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.radioButton,
-                  formData.familyHistory === option.key && styles.radioButtonActive,
-                ]}
-                onPress={() => setFormData({ ...formData, familyHistory: option.key })}
-              >
-                <Text
-                  style={[
-                    styles.radioButtonText,
-                    formData.familyHistory === option.key && styles.radioButtonTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Current Symptoms (select all that apply)</Text>
-          <View style={styles.checkboxGroup}>
-            {symptoms.map((symptom) => (
-              <TouchableOpacity
-                key={symptom}
-                style={[
-                  styles.checkboxButton,
-                  formData.symptoms.includes(symptom) && styles.checkboxButtonActive,
-                ]}
-                onPress={() => handleSymptomToggle(symptom)}
-              >
-                <Text
-                  style={[
-                    styles.checkboxButtonText,
-                    formData.symptoms.includes(symptom) && styles.checkboxButtonTextActive,
-                  ]}
-                >
-                  {symptom}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Smoking Status</Text>
-          <View style={styles.radioGroup}>
-            {[
-              { key: 'never', label: 'Never' },
-              { key: 'former', label: 'Former' },
-              { key: 'current', label: 'Current' },
-            ].map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.radioButton,
-                  formData.smokingStatus === option.key && styles.radioButtonActive,
-                ]}
-                onPress={() => setFormData({ ...formData, smokingStatus: option.key })}
-              >
-                <Text
-                  style={[
-                    styles.radioButtonText,
-                    formData.smokingStatus === option.key && styles.radioButtonTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-          onPress={submitAssessment}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <>
-              <Send size={20} color="white" />
-              <Text style={styles.submitButtonText}>Submit Assessment</Text>
-            </>
+          <Text style={styles.questionTitle}>{question.text}</Text>
+          {question.description && (
+            <Text style={styles.questionDescription}>{question.description}</Text>
           )}
-        </TouchableOpacity>
-      </ScrollView>
+        </View>
+
+        <View style={styles.optionsContainer}>
+          {question.type === 'single-choice' && question.options?.map((option, index) => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.optionCard,
+                { 
+                  backgroundColor: getOptionColor(index),
+                  transform: [{ scale: scaleAnim }]
+                }
+              ]}
+              onPress={() => handleAnswer(option.value, option)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.optionContent}>
+                <Text style={styles.optionText}>{option.text}</Text>
+                <ArrowRight size={20} color="white" />
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          {question.type === 'multiple-choice' && (
+            <MultipleChoiceQuestion 
+              question={question}
+              onAnswer={handleAnswer}
+            />
+          )}
+
+          {question.type === 'number' && (
+            <NumberInputQuestion 
+              question={question}
+              onAnswer={handleAnswer}
+            />
+          )}
+
+          {question.type === 'slider' && (
+            <SliderQuestion 
+              question={question}
+              onAnswer={handleAnswer}
+            />
+          )}
+        </View>
+      </Animated.View>
+    );
+  };
+
+  const getOptionColor = (index: number) => {
+    const colors = ['#0066CC', '#28A745', '#FF6B35', '#9B59B6', '#E74C3C', '#F39C12'];
+    return colors[index % colors.length];
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0066CC" />
+        <Text style={styles.loadingText}>Processing your health journey...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Image 
+        source={{ uri: 'https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg?auto=compress&cs=tinysrgb&w=800' }}
+        style={styles.backgroundImage}
+      />
+      <View style={styles.overlay} />
+      
+      {renderProgressHeader()}
+      
+      <View style={styles.content}>
+        {renderQuestion()}
+      </View>
+
+      {gameState.badges.length > 0 && (
+        <View style={styles.badgeContainer}>
+          <Text style={styles.badgeTitle}>Achievements Unlocked!</Text>
+          <View style={styles.badgeList}>
+            {gameState.badges.map((badge, index) => (
+              <View key={badge} style={styles.badge}>
+                <Trophy size={16} color="#FFD700" />
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
+// Additional question components
+const MultipleChoiceQuestion = ({ question, onAnswer }: { question: Question, onAnswer: (value: any) => void }) => {
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+
+  const toggleOption = (optionId: string) => {
+    const newSelection = selectedOptions.includes(optionId)
+      ? selectedOptions.filter(id => id !== optionId)
+      : [...selectedOptions, optionId];
+    setSelectedOptions(newSelection);
+  };
+
+  const handleContinue = () => {
+    onAnswer(selectedOptions);
+  };
+
+  return (
+    <View>
+      {question.options?.map((option, index) => (
+        <TouchableOpacity
+          key={option.id}
+          style={[
+            styles.multiOptionCard,
+            selectedOptions.includes(option.id) && styles.selectedOption
+          ]}
+          onPress={() => toggleOption(option.id)}
+        >
+          <View style={styles.checkboxContainer}>
+            {selectedOptions.includes(option.id) && (
+              <CheckCircle size={20} color="#0066CC" />
+            )}
+          </View>
+          <Text style={styles.multiOptionText}>{option.text}</Text>
+        </TouchableOpacity>
+      ))}
+      
+      {selectedOptions.length > 0 && (
+        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+          <Text style={styles.continueButtonText}>Continue</Text>
+          <ArrowRight size={20} color="white" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+const NumberInputQuestion = ({ question, onAnswer }: { question: Question, onAnswer: (value: any) => void }) => {
+  const [value, setValue] = useState('');
+
+  const handleSubmit = () => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      onAnswer(numValue);
+    }
+  };
+
+  return (
+    <View style={styles.numberInputContainer}>
+      <View style={styles.numberInput}>
+        <Text style={styles.numberValue}>{value || '0'}</Text>
+        <Text style={styles.numberUnit}>{question.unit}</Text>
+      </View>
+      
+      <View style={styles.numberPad}>
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, '⌫'].map((num, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.numberKey}
+            onPress={() => {
+              if (num === '⌫') {
+                setValue(prev => prev.slice(0, -1));
+              } else {
+                setValue(prev => prev + num.toString());
+              }
+            }}
+          >
+            <Text style={styles.numberKeyText}>{num}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      
+      {value && (
+        <TouchableOpacity style={styles.continueButton} onPress={handleSubmit}>
+          <Text style={styles.continueButtonText}>Continue</Text>
+          <ArrowRight size={20} color="white" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+const SliderQuestion = ({ question, onAnswer }: { question: Question, onAnswer: (value: any) => void }) => {
+  const [value, setValue] = useState(question.min || 1);
+
+  const handleSubmit = () => {
+    onAnswer(value);
+  };
+
+  return (
+    <View style={styles.sliderContainer}>
+      <View style={styles.sliderValue}>
+        <Text style={styles.sliderNumber}>{value}</Text>
+        <Text style={styles.sliderLabel}>out of {question.max}</Text>
+      </View>
+      
+      <View style={styles.sliderTrack}>
+        <View style={styles.sliderFill} />
+        <TouchableOpacity style={styles.sliderThumb} />
+      </View>
+      
+      <View style={styles.sliderLabels}>
+        <Text style={styles.sliderLabelText}>Low</Text>
+        <Text style={styles.sliderLabelText}>High</Text>
+      </View>
+      
+      <TouchableOpacity style={styles.continueButton} onPress={handleSubmit}>
+        <Text style={styles.continueButtonText}>Continue</Text>
+        <ArrowRight size={20} color="white" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFB',
+    backgroundColor: '#0066CC',
   },
-  header: {
+  backgroundImage: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  overlay: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 102, 204, 0.8)',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFB',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#64748B',
+  },
+  progressHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    gap: 12,
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  form: {
+  progressTrack: {
     flex: 1,
-    padding: 24,
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 4,
+    marginRight: 12,
   },
-  sectionTitle: {
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFD700',
+    borderRadius: 4,
+  },
+  progressText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    minWidth: 40,
+  },
+  gameStats: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  statText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+  questionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  questionHeader: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  questionIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  questionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 32,
+  },
+  questionDescription: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  optionsContainer: {
+    gap: 16,
+  },
+  optionCard: {
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  optionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  optionText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 16,
-    marginTop: 24,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  radioGroup: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  radioButton: {
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  radioButtonActive: {
-    borderColor: '#0066CC',
-    backgroundColor: '#0066CC',
-  },
-  radioButtonText: {
-    color: '#374151',
-    fontWeight: '500',
-  },
-  radioButtonTextActive: {
     color: 'white',
+    flex: 1,
   },
-  checkboxGroup: {
-    gap: 8,
+  multiOptionCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  checkboxButton: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  selectedOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#FFD700',
   },
-  checkboxButtonActive: {
-    borderColor: '#0066CC',
-    backgroundColor: '#EBF4FF',
+  checkboxContainer: {
+    width: 24,
+    height: 24,
+    marginRight: 16,
   },
-  checkboxButtonText: {
-    color: '#374151',
+  multiOptionText: {
+    fontSize: 16,
+    color: 'white',
+    flex: 1,
   },
-  checkboxButtonTextActive: {
-    color: '#0066CC',
-    fontWeight: '500',
-  },
-  submitButton: {
-    backgroundColor: '#0066CC',
+  continueButton: {
+    backgroundColor: '#28A745',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 8,
-    marginTop: 32,
-    marginBottom: 24,
+    borderRadius: 12,
+    marginTop: 24,
     gap: 8,
   },
-  submitButtonDisabled: {
-    opacity: 0.7,
-  },
-  submitButtonText: {
+  continueButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
+  },
+  numberInputContainer: {
+    alignItems: 'center',
+  },
+  numberInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 32,
+    minWidth: 200,
+  },
+  numberValue: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  numberUnit: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 8,
+  },
+  numberPad: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    maxWidth: 240,
+  },
+  numberKey: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  numberKeyText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: 'white',
+  },
+  sliderContainer: {
+    alignItems: 'center',
+  },
+  sliderValue: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  sliderNumber: {
+    fontSize: 64,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  sliderLabel: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  sliderTrack: {
+    width: '80%',
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 4,
+    marginBottom: 16,
+    position: 'relative',
+  },
+  sliderFill: {
+    width: '50%',
+    height: '100%',
+    backgroundColor: '#FFD700',
+    borderRadius: 4,
+  },
+  sliderThumb: {
+    position: 'absolute',
+    left: '50%',
+    top: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginBottom: 32,
+  },
+  sliderLabelText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: 100,
+    right: 24,
+    backgroundColor: 'rgba(255, 215, 0, 0.9)',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+  },
+  badgeTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  badgeList: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  badge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
