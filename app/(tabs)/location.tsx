@@ -11,8 +11,6 @@ import {
   Linking,
   Modal,
   Dimensions,
-  Modal,
-  Dimensions,
 } from 'react-native';
 import {
   MapPin,
