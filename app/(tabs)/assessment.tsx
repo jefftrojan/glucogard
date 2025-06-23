@@ -490,30 +490,32 @@ const MultipleChoiceQuestion = ({ question, onAnswer }: { question: Question, on
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-      {question.options?.map((option, index) => (
-        <TouchableOpacity
-          key={option.id}
-          style={[
-            styles.multiOptionCard,
-            selectedOptions.includes(option.id) && styles.selectedOption
-          ]}
-          onPress={() => toggleOption(option.id)}
-        >
-          <View style={styles.checkboxContainer}>
-            {selectedOptions.includes(option.id) && (
-              <CheckCircle size={20} color="#0066CC" />
-            )}
-          </View>
-          <Text style={styles.multiOptionText}>{option.text}</Text>
-        </TouchableOpacity>
-      ))}
+        {question.options?.map((option, index) => (
+          <TouchableOpacity
+            key={option.id}
+            style={[
+              styles.multiOptionCard,
+              selectedOptions.includes(option.id) && styles.selectedOption
+            ]}
+            onPress={() => toggleOption(option.id)}
+          >
+            <View style={styles.checkboxContainer}>
+              {selectedOptions.includes(option.id) && (
+                <CheckCircle size={20} color="#0066CC" />
+              )}
+            </View>
+            <Text style={styles.multiOptionText}>{option.text}</Text>
+          </TouchableOpacity>
+      </ScrollView>
       
-      {selectedOptions.length > 0 && (
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>Continue</Text>
-          <ArrowRight size={20} color="white" />
-        </TouchableOpacity>
-      )}
+      <View style={styles.continueButtonContainer}>
+        {value && (
+          <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+            <Text style={styles.continueButtonText}>Continue</Text>
+            <ArrowRight size={20} color="white" />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
@@ -551,17 +553,12 @@ const NumberInputQuestion = ({ question, onAnswer }: { question: Question, onAns
             <Text style={styles.numberKeyText}>{num}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
       </View>
       
-      <View style={styles.continueButtonContainer}>
-        {selectedOptions.length > 0 && (
-        <TouchableOpacity style={styles.continueButton} onPress={handleSubmit}>
-          <Text style={styles.continueButtonText}>Continue</Text>
-          <ArrowRight size={20} color="white" />
-        </TouchableOpacity>
-        )}
-      </View>
+      <TouchableOpacity style={styles.continueButton} onPress={handleSubmit}>
+        <Text style={styles.continueButtonText}>Continue</Text>
+        <ArrowRight size={20} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };
