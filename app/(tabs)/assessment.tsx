@@ -506,10 +506,11 @@ const MultipleChoiceQuestion = ({ question, onAnswer }: { question: Question, on
             </View>
             <Text style={styles.multiOptionText}>{option.text}</Text>
           </TouchableOpacity>
+        ))}
       </ScrollView>
       
       <View style={styles.continueButtonContainer}>
-        {value && (
+        {selectedOptions.length > 0 && (
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
             <Text style={styles.continueButtonText}>Continue</Text>
             <ArrowRight size={20} color="white" />
