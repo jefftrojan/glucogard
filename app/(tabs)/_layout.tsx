@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, ClipboardList, Stethoscope, User } from 'lucide-react-native';
+import { Home, ClipboardList, Stethoscope, User, Brain, MapPin, Settings } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
@@ -48,6 +48,24 @@ export default function TabLayout() {
         />
       )}
 
+      {user.role === 'patient' && (
+        <Tabs.Screen
+          name="smart-assessment"
+          options={{
+            title: 'Smart Quiz',
+            tabBarIcon: ({ size, color }) => <Brain size={size} color={color} />,
+          }}
+        />
+      )}
+
+      <Tabs.Screen
+        name="location"
+        options={{
+          title: 'Health Map',
+          tabBarIcon: ({ size, color }) => <MapPin size={size} color={color} />,
+        }}
+      />
+
       {user.role === 'doctor' && (
         <Tabs.Screen
           name="patients"
@@ -63,6 +81,14 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ size, color }) => <Settings size={size} color={color} />,
         }}
       />
     </Tabs>

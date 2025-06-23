@@ -3,9 +3,14 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider } from '@/context/AuthContext';
+import { initializeI18n } from '@/lib/i18n';
 
 export default function RootLayout() {
   useFrameworkReady();
+
+  useEffect(() => {
+    initializeI18n();
+  }, []);
 
   return (
     <AuthProvider>
