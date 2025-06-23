@@ -12,15 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { 
-  Brain, 
-  ArrowRight, 
-  ArrowLeft, 
-  CheckCircle, 
-  Star,
-  Zap,
-  Target
-} from 'lucide-react-native';
+import { Brain, ArrowRight, ArrowLeft, CircleCheck as CheckCircle, Star, Zap, Target } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { 

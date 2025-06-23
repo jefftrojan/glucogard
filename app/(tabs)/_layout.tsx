@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, ClipboardList, Stethoscope, User, Brain, MapPin, Settings } from 'lucide-react-native';
+import { Chrome as Home, ClipboardList, Stethoscope, User, Brain, MapPin, Settings } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
