@@ -11,6 +11,8 @@ import {
   Linking,
   Modal,
   Dimensions,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import {
   MapPin,
@@ -24,6 +26,7 @@ import {
   Clock,
   ExternalLink,
   RefreshCw,
+  X,
   X,
 } from 'lucide-react-native';
 import {
@@ -41,6 +44,8 @@ import { t } from '@/lib/i18n';
 
 const { width, height } = Dimensions.get('window');
 
+const { width, height } = Dimensions.get('window');
+
 export default function LocationScreen() {
   const { user } = useAuth();
   const [location, setLocation] = useState<LocationData | null>(null);
@@ -50,6 +55,8 @@ export default function LocationScreen() {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [selectedType, setSelectedType] = useState<HealthFacility['type'] | 'all'>('all');
   const [environmentType, setEnvironmentType] = useState<'urban' | 'rural'>('urban');
+  const [selectedFacility, setSelectedFacility] = useState<HealthFacility | null>(null);
+  const [showMapModal, setShowMapModal] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<HealthFacility | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
 
@@ -143,6 +150,11 @@ export default function LocationScreen() {
   const openInMaps = (facility: HealthFacility) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`;
     Linking.openURL(url);
+  };
+
+  const showFacilityMap = (facility: HealthFacility) => {
+    setSelectedFacility(facility);
+    setShowMapModal(true);
   };
 
   const showFacilityMap = (facility: HealthFacility) => {
@@ -378,12 +390,81 @@ export default function LocationScreen() {
                     <Navigation size={16} color="#28A745" />
                     <Text style={styles.actionButtonText}>Directions</Text>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => showFacilityMap(facility)}
+                  >
+                    <MapPin size={16} color="#0066CC" />
+                    <Text style={styles.actionButtonText}>View Map</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             );
           })}
         </View>
       </ScrollView>
+
+      {/* Map Modal */}
+      <Modal
+        visible={showMapModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowMapModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {selectedFacility?.name}
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowMapModal(false)}
+            >
+              <X size={24} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.mapContainer}>
+            {/* Embedded Google Maps */}
+            <iframe
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dO_BcqCGAOtEtE&q=${selectedFacility?.latitude},${selectedFacility?.longitude}&zoom=15`}
+              allowFullScreen
+            />
+          </View>
+          
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={styles.modalActionButton}
+              onPress={() => {
+                if (selectedFacility) {
+                  openInMaps(selectedFacility);
+                }
+              }}
+            >
+              <Navigation size={20} color="white" />
+              <Text style={styles.modalActionText}>Get Directions</Text>
+            </TouchableOpacity>
+            
+            {selectedFacility?.phone && (
+              <TouchableOpacity
+                style={[styles.modalActionButton, { backgroundColor: '#28A745' }]}
+                onPress={() => {
+                  if (selectedFacility?.phone) {
+                    callFacility(selectedFacility.phone);
+                  }
+                }}
+              >
+                <Phone size={20} color="white" />
+                <Text style={styles.modalActionText}>Call</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
 
       {/* Map Modal */}
       <Modal
@@ -659,6 +740,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#374151',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFB',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
+    flex: 1,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  mapContainer: {
+    flex: 1,
+    margin: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  modalActionButton: {
+    flex: 1,
+    backgroundColor: '#0066CC',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  modalActionText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,

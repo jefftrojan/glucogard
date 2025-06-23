@@ -416,6 +416,15 @@ export default function ProfileScreen() {
           <Text style={styles.footerSubtext}>
             Empowering health decisions in Rwanda and beyond
           </Text>
+          
+          {/* Doctor Access Link in Footer */}
+          <TouchableOpacity 
+            style={styles.doctorAccessButton}
+            onPress={() => router.push('/auth/register')}
+          >
+            <Stethoscope size={16} color="#64748B" />
+            <Text style={styles.doctorAccessText}>Healthcare Provider Access</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -642,6 +651,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  doctorAccessButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFB',
+    gap: 6,
+  },
+  doctorAccessText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
   },
   section: {
     marginBottom: 32,
