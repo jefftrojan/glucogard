@@ -25,6 +25,39 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signUp(email, password, fullName, role);
+      Alert.alert('Success', 'Account created successfully!');
+      router.push('/auth/login');
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color="#374151" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Create Account</Text>
+      </View>
+
+      <View style={styles.form}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Full Name</Text>
           <TextInput
@@ -85,8 +118,43 @@ export default function RegisterScreen() {
         <TouchableOpacity
           style={styles.linkButton}
           onPress={() => router.push('/auth/login')}
-    }
-  }
+        >
+          <Text style={styles.linkText}>
+            Already have an account?{' '}
+            <Text style={styles.linkTextBold}>Sign In</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  form: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
   inputGroup: {
     marginBottom: 20,
   },
