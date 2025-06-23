@@ -52,8 +52,6 @@ export default function LocationScreen() {
   const [environmentType, setEnvironmentType] = useState<'urban' | 'rural'>('urban');
   const [selectedFacility, setSelectedFacility] = useState<HealthFacility | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
-  const [selectedFacility, setSelectedFacility] = useState<HealthFacility | null>(null);
-  const [showMapModal, setShowMapModal] = useState(false);
 
   useEffect(() => {
     checkLocationPermission();
