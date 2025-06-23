@@ -12,18 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { 
-  Heart, 
-  ArrowRight, 
-  ArrowLeft, 
-  CheckCircle, 
-  Star,
-  Trophy,
-  Target,
-  Zap,
-  Brain,
-  Activity
-} from 'lucide-react-native';
+import { Heart, ArrowRight, ArrowLeft, CircleCheck as CheckCircle, Star, Trophy, Target, Zap, Brain, Activity } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { 
