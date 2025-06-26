@@ -2,6 +2,10 @@
   "expo": {
     "name": "bolt-expo-nativewind",
     "slug": "bolt-expo-nativewind",
+    "extra": {
+      "supabaseUrl": process.env.EXPO_PUBLIC_SUPABASE_URL,
+      "supabaseAnonKey": process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
