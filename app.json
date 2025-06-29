@@ -11,7 +11,11 @@
     "extra": {
       "eas": {
         "projectId": "your-project-id-here"
-      }
+      },
+      "supabaseUrl": "https://your-project-ref.supabase.co",
+      "supabaseAnonKey": "your-anon-key-here",
+      "EXPO_PUBLIC_WEB_DASHBOARD_URL": "https://localhost:8081/web-dashboard",
+      "EXPO_PUBLIC_RESEARCH_PORTAL_URL": "https://localhost:8081/research-portal"
     },
     "ios": {
       "supportsTablet": true
