@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Activity, MapPin, User } from 'lucide-react-native';
+import { Chrome as Home, Activity, MapPin, User, Database } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
@@ -54,6 +54,13 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="research"
+        options={{
+          title: 'Research',
+          tabBarIcon: ({ size, color }) => <Database size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{

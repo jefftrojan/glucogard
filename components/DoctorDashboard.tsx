@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -17,6 +18,7 @@ import {
   Eye,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { DoctorWebDashboard } from './DoctorWebDashboard';
 
 interface SubmissionWithPatient {
   id: string;
@@ -38,6 +40,11 @@ export function DoctorDashboard() {
   const router = useRouter();
   const [submissions, setSubmissions] = useState<SubmissionWithPatient[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Use web dashboard for web platform
+  if (Platform.OS === 'web') {
+    return <DoctorWebDashboard />;
+  }
 
   useEffect(() => {
     fetchSubmissions();
