@@ -80,13 +80,96 @@ To get a local copy up and running, follow these simple steps.
     - Run on an iOS simulator/device
     - Run in a web browser
 
+## Web Dashboard and Research Portal Deployment
+
+### Web Dashboard (`/web-dashboard`)
+The web dashboard provides healthcare providers with:
+- Patient management interface
+- Real-time health analytics
+- Risk assessment tools
+- Population health insights
+
+**Authentication**: Requires doctor role authentication
+**Access**: Healthcare providers only
+
+### Research Portal (`/research-portal`)
+The research portal offers:
+- Anonymized health data access
+- Public health metrics
+- Research data export (CSV)
+- Interactive visualizations
+
+**Authentication**: Public access with optional authentication for enhanced features
+**Compliance**: GDPR and Rwanda Law No. 058/2021 compliant
+
+### Deployment Steps
+
+1. **Build for Web**:
+   ```sh
+   expo export --platform web
+   ```
+
+2. **Environment Variables**:
+   Set up the following environment variables:
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   EXPO_PUBLIC_WEB_DASHBOARD_URL=https://your-domain.com/web-dashboard
+   EXPO_PUBLIC_RESEARCH_PORTAL_URL=https://your-domain.com/research-portal
+   ```
+
+3. **Deploy to Hosting Provider**:
+   - **Vercel**: Connect your repository and deploy
+   - **Netlify**: Drag and drop the `dist` folder or connect via Git
+   - **Custom Server**: Upload the `dist` folder to your web server
+
+4. **Configure Domain and SSL**:
+   - Set up custom domain
+   - Configure SSL certificate
+   - Update CORS settings in Supabase
+
+5. **Security Configuration**:
+   - Configure authentication providers in Supabase
+   - Set up Row Level Security policies
+   - Implement rate limiting for API endpoints
+   - Configure security headers
+
+### Authentication for Web Dashboards
+
+The web dashboards use a dual authentication system:
+
+1. **Mobile App Authentication**: Uses the existing `AuthContext` for mobile users
+2. **Web Dashboard Authentication**: Uses `WebAuthProvider` for web-specific authentication
+
+**Doctor Dashboard Authentication**:
+- Requires valid email/password authentication
+- Automatically verifies doctor role
+- Redirects unauthorized users
+- Session management with automatic logout
+
+**Research Portal Authentication**:
+- Public access for viewing anonymized data
+- Optional authentication for data export
+- Role-based access for enhanced features
+
+### API Endpoints
+
+- `/web-dashboard` - Doctor dashboard API
+- `/web-auth` - Web authentication API
+- `/research-portal` - Research data API
+- `/deployment` - Deployment status and configuration
+
 ## Key Features
 
 - User authentication (registration and login) for patients and doctors.
 - Separate dashboards for patients and doctors.
-- Glucose level tracking for patients.
-- Patient list and data viewing for doctors.
+- Health risk assessment for patients.
+- Patient management and analytics for doctors.
+- Web dashboard for healthcare providers.
+- Research portal for anonymized health data.
 - Profile management.
+- Location-based health recommendations.
+- Research data export and analytics.
 
 ## Technologies Used
 
@@ -94,10 +177,13 @@ To get a local copy up and running, follow these simple steps.
     - React Native
     - Expo
     - TypeScript
+    - Web Dashboard (React Native Web)
 - **Backend & Database:**
     - Supabase (PostgreSQL, Auth, Realtime)
+    - API Routes (Expo Router)
 - **Styling:** (Assumed, based on typical React Native development)
 - **Navigation:** React Navigation (Expo Router)
+- **Deployment:** Web-compatible build system
 
 ## Project Structure
 
@@ -110,15 +196,20 @@ glucogard/
 ├── app/                     # Main application code (screens, navigation)
 │   ├── (tabs)/              # Tab-based navigation layout
 │   ├── auth/                # Authentication screens
+│   ├── web-dashboard/       # Web dashboard for doctors
+│   ├── research-portal/     # Public research portal
 │   ├── _layout.tsx          # Root layout
 │   └── index.tsx            # Entry point for the app
 ├── assets/                  # Static assets (images, fonts)
 ├── components/              # Reusable UI components
+│   ├── DoctorWebDashboard.tsx  # Web-optimized doctor dashboard
+│   ├── WebAuthProvider.tsx     # Web authentication provider
 ├── context/                 # React Context API for global state
 │   └── AuthContext.tsx      # Authentication state management
 ├── hooks/                   # Custom React hooks
 ├── lib/                     # Utility functions, Supabase client setup
 │   ├── auth.ts              # Authentication helper functions
+│   ├── research.ts          # Research data and analytics
 │   └── supabase.ts          # Supabase client initialization
 ├── supabase/                # Supabase specific files
 │   └── migrations/          # Database schema migrations
