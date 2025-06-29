@@ -10,21 +10,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import {
-  Database,
-  Download,
-  TrendingUp,
-  Users,
-  MapPin,
-  Shield,
-  BarChart3,
-  PieChart,
-  Activity,
-  Globe,
-  Calendar,
-  FileText,
-  AlertTriangle,
-} from 'lucide-react-native';
+import { Database, Download, TrendingUp, Users, MapPin, Shield, ChartBar as BarChart3, ChartPie as PieChart, Activity, Globe, Calendar, FileText, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 
 interface PublicHealthMetrics {
   total_assessments: number;

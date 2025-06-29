@@ -9,23 +9,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import {
-  Users,
-  AlertTriangle,
-  TrendingUp,
-  Calendar,
-  MapPin,
-  Activity,
-  Heart,
-  Stethoscope,
-  FileText,
-  Download,
-  Filter,
-  Search,
-  Eye,
-  Clock,
-  CheckCircle,
-} from 'lucide-react-native';
+import { Users, TriangleAlert as AlertTriangle, TrendingUp, Calendar, MapPin, Activity, Heart, Stethoscope, FileText, Download, Filter, Search, Eye, Clock, CircleCheck as CheckCircle } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { generatePublicHealthMetrics, type PublicHealthMetrics } from '@/lib/research';
 

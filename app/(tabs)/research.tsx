@@ -11,23 +11,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import {
-  Database,
-  Download,
-  TrendingUp,
-  Users,
-  MapPin,
-  Calendar,
-  Filter,
-  RefreshCw,
-  FileText,
-  Shield,
-  AlertTriangle,
-  BarChart3,
-  PieChart,
-  Activity,
-  Globe,
-} from 'lucide-react-native';
+import { Database, Download, TrendingUp, Users, MapPin, Calendar, Filter, RefreshCw, FileText, Shield, TriangleAlert as AlertTriangle, ChartBar as BarChart3, ChartPie as PieChart, Activity, Globe } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { 
   generatePublicHealthMetrics,

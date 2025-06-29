@@ -9,14 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  Users,
-  AlertTriangle,
-  Clock,
-  CheckCircle,
-  TrendingUp,
-  Eye,
-} from 'lucide-react-native';
+import { Users, TriangleAlert as AlertTriangle, Clock, CircleCheck as CheckCircle, TrendingUp, Eye } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { DoctorWebDashboard } from './DoctorWebDashboard';
 
