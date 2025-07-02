@@ -9,13 +9,12 @@ export default function IndexScreen() {
 
   useEffect(() => {
     if (!loading) {
+      // Let AuthContext handle the routing logic
+      // This prevents conflicts with the auth context navigation
       if (user) {
-        // User is authenticated, go to main app
         router.replace('/(tabs)');
-      } else {
-        // User is not authenticated, show onboarding first
-        router.replace('/onboarding');
       }
+      // For unauthenticated users, AuthContext will handle onboarding/auth routing
     }
   }, [user, loading, router]);
 

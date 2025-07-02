@@ -197,6 +197,11 @@ export default function OnboardingScreen() {
         translateX.value = withSpring(0);
       });
     } else {
+      // Mark onboarding as seen and navigate to auth
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('hasSeenOnboarding', 'true');
+      }
+      
       // Final animation before navigation
       scale.value = withSequence(
         withTiming(1.1, { duration: 200 }),
@@ -218,6 +223,11 @@ export default function OnboardingScreen() {
   };
 
   const skip = () => {
+    // Mark onboarding as seen
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hasSeenOnboarding', 'true');
+    }
+    
     scale.value = withTiming(0.9, { duration: 150 }, () => {
       runOnJS(router.replace)('/auth');
     });
