@@ -10,9 +10,10 @@ export default function IndexScreen() {
   useEffect(() => {
     if (!loading) {
       if (user) {
+        // User is authenticated, go to main app
         router.replace('/(tabs)');
       } else {
-        // Always show onboarding first for new users
+        // User is not authenticated, show onboarding first
         router.replace('/onboarding');
       }
     }

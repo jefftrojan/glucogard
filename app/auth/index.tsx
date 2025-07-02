@@ -40,6 +40,14 @@ export default function AuthWelcomeScreen() {
           <Text style={styles.footerText}>
             Designed for Rwanda and low-resource settings
           </Text>
+          
+          {/* Back to onboarding option */}
+          <TouchableOpacity 
+            style={styles.backToOnboardingButton}
+            onPress={() => router.push('/onboarding')}
+          >
+            <Text style={styles.backToOnboardingText}>← Back to Introduction</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -117,10 +125,20 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingBottom: 20,
+    gap: 16,
   },
   footerText: {
     fontSize: 14,
     color: '#94A3B8',
     textAlign: 'center',
+  },
+  backToOnboardingButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  backToOnboardingText: {
+    fontSize: 14,
+    color: '#0066CC',
+    fontWeight: '500',
   },
 });
