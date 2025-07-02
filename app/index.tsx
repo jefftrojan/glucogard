@@ -12,6 +12,7 @@ export default function IndexScreen() {
       if (user) {
         router.replace('/(tabs)');
       } else {
+        // Always show onboarding first for new users
         router.replace('/onboarding');
       }
     }
