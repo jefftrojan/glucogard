@@ -35,7 +35,6 @@ export default function AuthWelcomeScreen() {
   // Animation values
   const logoScale = useSharedValue(0);
   const titleOpacity = useSharedValue(0);
-  const subtitleOpacity = useSharedValue(0);
   const roleCardsScale = useSharedValue(0);
   const buttonsOpacity = useSharedValue(0);
   const sparkleRotation = useSharedValue(0);
@@ -48,9 +47,8 @@ export default function AuthWelcomeScreen() {
     logoScale.value = withSpring(1, { damping: 15, stiffness: 150 });
     
     titleOpacity.value = withDelay(200, withSpring(1));
-    subtitleOpacity.value = withDelay(400, withSpring(1));
-    roleCardsScale.value = withDelay(600, withSpring(1, { damping: 12, stiffness: 100 }));
-    buttonsOpacity.value = withDelay(800, withSpring(1));
+    roleCardsScale.value = withDelay(400, withSpring(1, { damping: 12, stiffness: 100 }));
+    buttonsOpacity.value = withDelay(600, withSpring(1));
 
     // Continuous animations
     sparkleRotation.value = withRepeat(
@@ -118,11 +116,6 @@ export default function AuthWelcomeScreen() {
     transform: [{ translateY: interpolate(titleOpacity.value, [0, 1], [20, 0]) }],
   }));
 
-  const subtitleAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: subtitleOpacity.value,
-    transform: [{ translateY: interpolate(subtitleOpacity.value, [0, 1], [20, 0]) }],
-  }));
-
   const roleCardsAnimatedStyle = useAnimatedStyle(() => ({
     opacity: roleCardsScale.value,
     transform: [{ scale: roleCardsScale.value }],
@@ -176,23 +169,19 @@ export default function AuthWelcomeScreen() {
       </Animated.View>
 
       <View style={styles.content}>
-        {/* Logo Section */}
+        {/* Logo Section - Simplified and more spacious */}
         <Animated.View style={[styles.logoSection, logoAnimatedStyle]}>
           <View style={styles.logoContainer}>
             <Animated.View style={[styles.heartContainer, heartAnimatedStyle]}>
-              <Heart size={48} color="#FF6B6B" fill="#FF6B6B" />
+              <Heart size={56} color="#FF6B6B" fill="#FF6B6B" />
             </Animated.View>
             <Animated.View style={[styles.activityContainer, activityAnimatedStyle]}>
-              <Activity size={32} color="#4ECDC4" />
+              <Activity size={36} color="#4ECDC4" />
             </Animated.View>
           </View>
           
           <Animated.Text style={[styles.title, titleAnimatedStyle]}>
             GlucoGard AI
-          </Animated.Text>
-          
-          <Animated.Text style={[styles.subtitle, subtitleAnimatedStyle]}>
-            Your intelligent health companion for diabetes prevention and care
           </Animated.Text>
         </Animated.View>
 
@@ -362,39 +351,31 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
     position: 'relative',
   },
   heartContainer: {
-    marginRight: 8,
+    marginRight: 12,
   },
   activityContainer: {
     position: 'absolute',
-    right: -20,
-    top: -8,
+    right: -24,
+    top: -12,
   },
   title: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 12,
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 20,
   },
   roleSection: {
     flex: 1,
