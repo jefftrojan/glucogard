@@ -362,7 +362,8 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -398,7 +399,8 @@ const styles = StyleSheet.create({
   roleSection: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 20,
+    minHeight: 400,
   },
   roleTitle: {
     fontSize: 24,
@@ -470,15 +472,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   buttonSection: {
-    gap: 16,
-    paddingBottom: 40,
+    paddingTop: 32,
+    paddingBottom: 20,
+    gap: 20,
   },
   primaryButton: {
     backgroundColor: '#28A745',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 20,
     borderRadius: 16,
     gap: 8,
     shadowColor: '#000',
@@ -486,17 +489,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    minHeight: 60,
   },
   secondaryButton: {
     backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 20,
     borderRadius: 16,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     gap: 8,
+    minHeight: 60,
   },
   disabledButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
@@ -517,7 +522,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 30,
     gap: 16,
   },
   footerText: {
