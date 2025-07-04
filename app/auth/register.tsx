@@ -14,7 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Eye, EyeOff, User, Mail, Lock, Zap, Heart, Stethoscope, CheckCircle, Sparkles, Star, Trophy } from 'lucide-react-native';
+import { ArrowLeft, Eye, EyeOff, User, Mail, Lock, Zap, Heart, Stethoscope, CircleCheck as CheckCircle, Sparkles, Star, Trophy } from 'lucide-react-native';
 import { signUp, type UserRole } from '@/lib/auth';
 import Animated, {
   useSharedValue,

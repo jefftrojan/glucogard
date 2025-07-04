@@ -13,7 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Eye, EyeOff, Mail, Lock, Zap, Heart, Stethoscope, CheckCircle, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, Zap, Heart, Stethoscope, CircleCheck as CheckCircle, Sparkles } from 'lucide-react-native';
 import { signIn } from '@/lib/auth';
 import Animated, {
   useSharedValue,
