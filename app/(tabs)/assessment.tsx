@@ -197,21 +197,22 @@ export default function AssessmentScreen() {
       if (submissionError) throw submissionError;
 
       // Generate risk prediction
-      const { riskScore, category } = generateRiskPrediction(finalAnswers);
+      const predictionResult = await getApiRiskPrediction(finalAnswers);
 
       // Create risk prediction
       const { error: predictionError } = await supabase
         .from('risk_predictions')
         .insert({
           submission_id: submission.id,
-          risk_score: riskScore,
-          risk_category: category,
+          risk_score: predictionResult.risk_level,
+          risk_category: predictionResult.risk_category,
+          raw_prediction: predictionResult,
         });
 
       if (predictionError) throw predictionError;
 
       // Create recommendations
-      const recommendations = generateRecommendations(finalAnswers, category);
+      const recommendations = generateRecommendations(finalAnswers, predictionResult.risk_category);
       if (recommendations.length > 0) {
         const { error: recommendationError } = await supabase
           .from('recommendations')
@@ -232,59 +233,45 @@ export default function AssessmentScreen() {
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
+      router.replace('/(tabs)/ResultsScreen');
     }
   };
 
   const showCompletionCelebration = () => {
-    Alert.alert(
-      '🎉 Assessment Complete!',
-      `Congratulations! You've earned ${gameState.score + 50} points and completed your health journey. Your personalized insights are ready!`,
-      [
-        {
-          text: 'View Results',
-          onPress: () => router.replace('/(tabs)')
-        }
-      ]
-    );
   };
 
-  const generateRiskPrediction = (answers: Record<string, any>) => {
-    let riskScore = 0;
-    
-    // Age factor
-    const age = parseInt(answers.age || '0');
-    if (age >= 45) riskScore += 20;
-    else if (age >= 35) riskScore += 10;
-    
-    // BMI factor
-    const weight = parseFloat(answers.weight || '0');
-    const height = parseFloat(answers.height || '0') / 100;
-    if (weight && height) {
-      const bmi = weight / (height * height);
-      if (bmi >= 30) riskScore += 25;
-      else if (bmi >= 25) riskScore += 15;
+  const getApiRiskPrediction = async (answers: Record<string, any>) => {
+    const heightInMeters = (answers.height || 0) / 100;
+    const bmi = heightInMeters > 0 ? (answers.weight || 0) / (heightInMeters * heightInMeters) : 0;
+
+    const apiPayload = {
+      age: answers.age || 0,
+      bmi: bmi,
+      weight: answers.weight || 0,
+      height: answers.height || 0,
+      systolic_bp: answers.systolic_bp || 0,
+      family_history: answers['family-history'] === 'yes' ? 1 : 0,
+      physical_activity: ['sedentary', 'light', 'moderate', 'active'].indexOf(answers['activity-level'] || 'sedentary'),
+      diet_quality: answers.diet_quality || 5,
+      location: answers.location === 'urban' ? 1 : 0,
+      smoking: ['never', 'former', 'current'].indexOf(answers.smoking || 'never'),
+    };
+
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+
+    const response = await fetch(`${apiUrl}/predict-risk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(apiPayload),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get risk prediction from the API');
     }
-    
-    // Other factors
-    if (answers['family-history'] === 'yes') riskScore += 15;
-    if (answers['activity-level'] === 'sedentary') riskScore += 15;
-    if (answers['diet-habits'] === 'poor') riskScore += 10;
-    if (answers.smoking === 'current') riskScore += 10;
-    
-    // Symptoms
-    const symptoms = answers.symptoms || [];
-    if (Array.isArray(symptoms) && symptoms.length > 0 && !symptoms.includes('none')) {
-      riskScore += symptoms.length * 5;
-    }
-    
-    riskScore = Math.min(riskScore, 100);
-    
-    let category: 'low' | 'moderate' | 'critical';
-    if (riskScore < 30) category = 'low';
-    else if (riskScore < 70) category = 'moderate';
-    else category = 'critical';
-    
-    return { riskScore, category };
+
+    return response.json();
   };
 
   const generateRecommendations = (answers: Record<string, any>, category: string) => {
@@ -532,7 +519,7 @@ const NumberInputQuestion = ({ question, onAnswer }: { question: Question, onAns
   };
 
   return (
-    <View style={styles.numberInputContainer}>
+    <ScrollView contentContainerStyle={styles.numberInputContainer}>
       <View style={styles.numberInput}>
         <Text style={styles.numberValue}>{value || '0'}</Text>
         <Text style={styles.numberUnit}>{question.unit}</Text>
@@ -560,7 +547,7 @@ const NumberInputQuestion = ({ question, onAnswer }: { question: Question, onAns
         <Text style={styles.continueButtonText}>Continue</Text>
         <ArrowRight size={20} color="white" />
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -572,7 +559,7 @@ const SliderQuestion = ({ question, onAnswer }: { question: Question, onAnswer: 
   };
 
   return (
-    <View style={styles.sliderContainer}>
+    <ScrollView contentContainerStyle={styles.sliderContainer}>
       <View style={styles.sliderValue}>
         <Text style={styles.sliderNumber}>{value}</Text>
         <Text style={styles.sliderLabel}>out of {question.max}</Text>
@@ -592,7 +579,7 @@ const SliderQuestion = ({ question, onAnswer }: { question: Question, onAnswer: 
         <Text style={styles.continueButtonText}>Continue</Text>
         <ArrowRight size={20} color="white" />
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 

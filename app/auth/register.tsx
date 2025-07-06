@@ -14,6 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft, Eye, EyeOff, User, Mail, Lock, Zap, Heart, Stethoscope, CircleCheck as CheckCircle, Sparkles, Star, Trophy } from 'lucide-react-native';
 import { signUp, type UserRole } from '@/lib/auth';
 import Animated, {
@@ -65,11 +66,17 @@ export default function RegisterScreen() {
   ];
 
   useEffect(() => {
-    // Get selected role from storage
-    if (typeof window !== 'undefined') {
-      const role = localStorage.getItem('selectedRole') as UserRole | null;
-      setSelectedRole(role || 'patient');
-    }
+    const fetchRole = async () => {
+      try {
+        const role = (await AsyncStorage.getItem('selectedRole')) as UserRole | null;
+        setSelectedRole(role || 'patient');
+      } catch (e) {
+        console.error('Failed to fetch role from storage', e);
+        setSelectedRole('patient');
+      }
+    };
+
+    fetchRole();
 
     // Entrance animations
     headerScale.value = withSpring(1, { damping: 15, stiffness: 150 });

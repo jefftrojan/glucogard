@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, Zap, Heart, Stethoscope, CircleCheck as CheckCircle, Sparkles } from 'lucide-react-native';
 import { signIn } from '@/lib/auth';
 import Animated, {
@@ -49,11 +50,16 @@ export default function LoginScreen() {
   const progressWidth = useSharedValue(0);
 
   useEffect(() => {
-    // Get selected role from storage
-    if (typeof window !== 'undefined') {
-      const role = localStorage.getItem('selectedRole') as 'patient' | 'doctor' | null;
-      setSelectedRole(role);
-    }
+    const fetchRole = async () => {
+      try {
+        const role = (await AsyncStorage.getItem('selectedRole')) as 'patient' | 'doctor' | null;
+        setSelectedRole(role);
+      } catch (e) {
+        console.error('Failed to fetch role from storage', e);
+      }
+    };
+
+    fetchRole();
 
     // Entrance animations
     headerScale.value = withSpring(1, { damping: 15, stiffness: 150 });

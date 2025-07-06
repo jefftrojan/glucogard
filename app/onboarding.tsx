@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Heart, Shield, MapPin, Brain, ChevronRight, ChevronLeft, Sparkles, Activity, Users } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
@@ -189,7 +190,7 @@ export default function OnboardingScreen() {
     );
   }, [currentIndex]);
 
-  const goToNext = () => {
+  const goToNext = async () => {
     if (currentIndex < slides.length - 1) {
       // Animate slide transition
       translateX.value = withSpring(-width, {}, () => {
@@ -197,10 +198,7 @@ export default function OnboardingScreen() {
         translateX.value = withSpring(0);
       });
     } else {
-      // Mark onboarding as seen and navigate to auth
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('hasSeenOnboarding', 'true');
-      }
+      // Navigate to auth
       
       // Final animation before navigation
       scale.value = withSequence(
@@ -222,11 +220,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const skip = () => {
-    // Mark onboarding as seen
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('hasSeenOnboarding', 'true');
-    }
+  const skip = async () => {
     
     scale.value = withTiming(0.9, { duration: 150 }, () => {
       runOnJS(router.replace)('/auth');

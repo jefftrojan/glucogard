@@ -11,11 +11,50 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { PatientDashboard } from '@/components/PatientDashboard';
 import { DoctorDashboard } from '@/components/DoctorDashboard';
+import { useRouter } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { type Json } from '@/types/database';
+
+interface Assessment {
+  id: string;
+  patient_id: string;
+  answers: Json;
+  status: string | null;
+  submitted_at: string | null;
+}
 
 export default function DashboardScreen() {
   const { user, loading } = useAuth();
+  const router = useRouter();
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(true);
 
-  if (loading) {
+  useEffect(() => {
+    const fetchAssessments = async () => {
+      if (user?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('health_submissions')
+            .select('*')
+            .eq('patient_id', user.id);
+
+          if (error) {
+            console.error('Error fetching assessments:', error);
+          } else {
+            setAssessments(data as Assessment[] || []);
+          }
+        } catch (error) {
+          console.error('Unexpected error fetching assessments:', error);
+        } finally {
+          setFetchLoading(false);
+        }
+      }
+    };
+
+    fetchAssessments();
+  }, [user]);
+
+  if (loading || fetchLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0066CC" />
@@ -27,6 +66,10 @@ export default function DashboardScreen() {
     return null;
   }
 
+  const navigateToAssessmentDetails = (assessmentId: string) => {
+    router.push(`/(tabs)/AssessmentDetailsScreen?id=${assessmentId}`);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -34,7 +77,25 @@ export default function DashboardScreen() {
         <Text style={styles.subtitle}>Welcome back, {user.full_name}</Text>
       </View>
 
-      {user.role === 'patient' ? <PatientDashboard /> : <DoctorDashboard />}
+      {user.role === 'patient' ? (
+        <View>
+          <PatientDashboard />
+          <Text style={styles.assessmentTitle}>Your Assessments</Text>
+          <ScrollView style={styles.assessmentList}>
+            {assessments.map((assessment) => (
+              <TouchableOpacity
+                key={assessment.id}
+                style={styles.assessmentItem}
+                onPress={() => navigateToAssessmentDetails(assessment.id)}
+              >
+                <Text style={styles.assessmentItemText}>Assessment {assessment.id}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      ) : (
+        <DoctorDashboard />
+      )}
     </SafeAreaView>
   );
 }
@@ -66,5 +127,28 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#64748B',
+  },
+  assessmentTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    paddingHorizontal: 24,
+    marginTop: 20,
+  },
+  assessmentList: {
+    paddingHorizontal: 24,
+    marginTop: 10,
+  },
+  assessmentItem: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  assessmentItemText: {
+    fontSize: 16,
+    color: '#1E293B',
   },
 });

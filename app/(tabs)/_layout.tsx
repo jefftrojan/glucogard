@@ -2,13 +2,18 @@ import { Tabs } from 'expo-router';
 import { Chrome as Home, Activity, MapPin, User, Database } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 
-export default function TabLayout() {
-  const { user } = useAuth();
+import { View } from 'react-native';
 
-  if (!user) {
-    return null;
+export default function TabLayout() {
+  const { user, loading } = useAuth();
+
+  // Render a loading state or a placeholder while auth is resolving
+  if (loading) {
+    return <View style={{ flex: 1, backgroundColor: 'white' }} />;
   }
 
+  // The AuthProvider will handle redirection if the user is not authenticated.
+  // This component should focus solely on rendering the tab layout.
   return (
     <Tabs
       screenOptions={{

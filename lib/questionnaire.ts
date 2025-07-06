@@ -91,6 +91,36 @@ export const ADAPTIVE_QUESTIONNAIRE: QuestionnaireFlow = {
       required: true
     },
     {
+      id: 'systolic_bp',
+      type: 'number',
+      text: 'What is your systolic blood pressure?',
+      description: 'Enter the top number from your blood pressure reading',
+      min: 70,
+      max: 200,
+      unit: 'mmHg',
+      required: true
+    },
+    {
+      id: 'diet_quality',
+      type: 'slider',
+      text: 'How would you rate the quality of your diet?',
+      description: '1 is poor, 10 is excellent',
+      min: 1,
+      max: 10,
+      step: 1,
+      required: true
+    },
+    {
+      id: 'location',
+      type: 'single-choice',
+      text: 'Do you live in an urban or rural area?',
+      options: [
+        { id: 'urban', text: 'Urban', value: 'urban' },
+        { id: 'rural', text: 'Rural', value: 'rural' }
+      ],
+      required: true
+    },
+    {
       id: 'family-history',
       type: 'single-choice',
       text: 'Do you have a family history of diabetes?',

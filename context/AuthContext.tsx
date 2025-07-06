@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser, type AuthUser } from '@/lib/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -14,7 +15,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const router = useRouter();
   const segments = useSegments();
 
@@ -50,39 +50,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Check if user has seen onboarding
-    const checkOnboardingStatus = () => {
-      const onboardingSeen = localStorage?.getItem('hasSeenOnboarding') === 'true';
-      setHasSeenOnboarding(onboardingSeen);
-    };
-
-    if (typeof window !== 'undefined') {
-      checkOnboardingStatus();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (loading) return; // Don't navigate until loading is complete
+    if (loading) return;
 
     const inAuthGroup = segments[0] === 'auth';
     const inAppGroup = segments[0] === '(tabs)';
-    const inOnboarding = segments[0] === 'onboarding';
 
     if (user && !inAppGroup) {
-      // User is authenticated, but not in the app group, redirect to tabs
       router.replace('/(tabs)');
-    } else if (!user) {
-      // User is not authenticated
-      if (!hasSeenOnboarding && !inOnboarding && !inAuthGroup) {
-        // Haven't seen onboarding, show it first
-        router.replace('/onboarding');
-      } else if (hasSeenOnboarding && !inAuthGroup && !inOnboarding) {
-        // Has seen onboarding, go to auth
-        router.replace('/auth');
-      }
-      // If already in onboarding or auth, don't redirect
+    } else if (!user && !inAuthGroup) {
+      router.replace('/auth');
     }
-  }, [user, loading, segments, router, hasSeenOnboarding]);
+  }, [user, loading, segments, router]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

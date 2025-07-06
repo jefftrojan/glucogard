@@ -23,6 +23,8 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -100,9 +102,10 @@ export default function AuthWelcomeScreen() {
 
   const navigateToAuth = (screen: 'login' | 'register') => {
     // Store selected role for later use
-    if (selectedRole && typeof window !== 'undefined') {
-      localStorage.setItem('selectedRole', selectedRole);
+    if (selectedRole) {
+      AsyncStorage.setItem('selectedRole', selectedRole);
     }
+    
     router.push(`/auth/${screen}`);
   };
 
@@ -180,9 +183,7 @@ export default function AuthWelcomeScreen() {
             </Animated.View>
           </View>
           
-          <Animated.Text style={[styles.title, titleAnimatedStyle]}>
-            GlucoGard AI
-          </Animated.Text>
+          
         </Animated.View>
 
         {/* Role Selection */}
@@ -295,9 +296,11 @@ export default function AuthWelcomeScreen() {
           
           <TouchableOpacity 
             style={styles.backToOnboardingButton}
-            onPress={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('hasSeenOnboarding');
+            onPress={async () => {
+              try {
+                await AsyncStorage.removeItem('hasSeenOnboarding');
+              } catch (e) {
+                console.error('Failed to remove onboarding status', e);
               }
               router.push('/onboarding');
             }}

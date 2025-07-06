@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
-    "slug": "bolt-expo-nativewind",
+    "name": "gluco-gard",
+    "slug":"glucogard",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,8 +12,6 @@
       "eas": {
         "projectId": "your-project-id-here"
       },
-      "supabaseUrl": "https://demo.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
       "EXPO_PUBLIC_WEB_DASHBOARD_URL": "https://localhost:8081/web-dashboard",
       "EXPO_PUBLIC_RESEARCH_PORTAL_URL": "https://localhost:8081/research-portal"
     },

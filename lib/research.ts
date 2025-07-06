@@ -12,7 +12,7 @@ export interface AnonymizedHealthData {
   age_group: string; // "18-25", "26-35", etc.
   gender: string;
   location_type: 'urban' | 'rural';
-  risk_category: 'low' | 'moderate' | 'critical';
+  risk_category: string;
   risk_score: number;
   activity_level: string;
   diet_habits: string;
@@ -28,6 +28,8 @@ export interface PublicHealthMetrics {
     low: number;
     moderate: number;
     critical: number;
+    high: number;
+    non_diabetic: number;
   };
   demographic_breakdown: {
     age_groups: Record<string, number>;
@@ -194,11 +196,11 @@ export async function anonymizeAndExportHealthData(
       age_group: getAgeGroup(submission.patients.age || 0),
       gender: submission.patients.gender || 'unknown',
       location_type: locationType,
-      risk_category: riskPrediction?.risk_category || 'low',
+      risk_category: riskPrediction?.risk_category || 'unknown',
       risk_score: riskPrediction?.risk_score || 0,
-      activity_level: answers.activityLevel || 'unknown',
-      diet_habits: answers.dietaryHabits || 'unknown',
-      family_history: answers.familyHistory === 'yes',
+      activity_level: answers['activity-level'] || 'unknown',
+      diet_habits: answers['diet-habits'] || 'unknown',
+      family_history: answers['family-history'] === 'yes',
       symptoms_count: symptomsCount,
       submission_date: submission.submitted_at,
       province: 'Kigali' // Could be determined from location
@@ -236,10 +238,10 @@ export async function generatePublicHealthMetrics(): Promise<PublicHealthMetrics
     // Calculate risk distribution
     const riskDistribution = anonymizedData.reduce(
       (acc, record) => {
-        acc[record.risk_category]++;
+        acc[record.risk_category as keyof typeof acc] = (acc[record.risk_category as keyof typeof acc] || 0) + 1;
         return acc;
       },
-      { low: 0, moderate: 0, critical: 0 }
+      { low: 0, moderate: 0, critical: 0, high: 0, non_diabetic: 0 }
     );
 
     // Calculate demographic breakdown

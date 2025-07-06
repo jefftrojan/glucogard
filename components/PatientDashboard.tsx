@@ -10,9 +10,10 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, TrendingUp, Plus, Target, Award, Zap, Calendar, ArrowRight } from 'lucide-react-native';
+import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, TrendingUp, Plus, Target, Award, Zap, Calendar, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import AssessmentList from './AssessmentList';
 
 const { width } = Dimensions.get('window');
 
@@ -22,7 +23,7 @@ interface HealthSubmission {
   submitted_at: string;
   risk_predictions?: {
     risk_score: number;
-    risk_category: 'low' | 'moderate' | 'critical';
+    risk_category: string; // More flexible for all categories
   }[];
   recommendations?: {
     content: string;
@@ -51,7 +52,12 @@ export function PatientDashboard() {
         .eq('user_id', user.id)
         .single();
 
-      if (!patientData) return;
+      if (!patientData) {
+        // It's possible a new user has no patient record yet.
+        // Don't throw an error, just return. The dashboard will show the "Get Started" card.
+        setLoading(false);
+        return;
+      }
 
       const { data } = await supabase
         .from('health_submissions')
@@ -85,12 +91,18 @@ export function PatientDashboard() {
     return latestSubmission?.risk_predictions?.[0];
   };
 
+  const latestPrediction = getLatestPrediction();
+
   const getRiskColor = (category: string) => {
-    switch (category) {
+    switch (category?.toLowerCase()) {
+      case 'non_diabetic':
+        return '#10B981';
       case 'low':
         return '#28A745';
       case 'moderate':
         return '#FFA500';
+      case 'high':
+        return '#EF4444';
       case 'critical':
         return '#DC3545';
       default:
@@ -99,11 +111,15 @@ export function PatientDashboard() {
   };
 
   const getRiskIcon = (category: string) => {
-    switch (category) {
+    switch (category?.toLowerCase()) {
+      case 'non_diabetic':
+        return CheckCircle;
       case 'low':
         return CheckCircle;
       case 'moderate':
         return Clock;
+      case 'high':
+        return AlertTriangle;
       case 'critical':
         return AlertTriangle;
       default:
@@ -119,31 +135,36 @@ export function PatientDashboard() {
     );
   }
 
-  const latestPrediction = getLatestPrediction();
   const totalRecommendations = submissions.reduce(
     (acc, sub) => acc + (sub.recommendations?.length || 0),
     0
   );
 
   const getMotivationalMessage = () => {
-    if (!latestPrediction) return "Ready to start your health journey?";
-    
-    switch (latestPrediction.risk_category) {
+    switch (latestPrediction?.risk_category.toLowerCase()) {
+      case 'non_diabetic':
+        return "Excellent results! You're doing great. ✅";
       case 'low':
         return "Great job! Keep up the healthy habits! 🌟";
       case 'moderate':
         return "You're on the right track! Small changes make big differences 💪";
+      case 'high':
+        return "It's time to focus on your health. We're here to help. 🤝";
       case 'critical':
         return "Let's work together to improve your health 🎯";
       default:
-        return "Every step counts towards better health! 🚀";
+        return "Ready to start your health journey?";
     }
   };
 
   const getHealthScore = () => {
     if (!latestPrediction) return 0;
-    return Math.max(0, 100 - latestPrediction.risk_score);
+    return Math.max(0, 100 - (latestPrediction.risk_score || 0));
   };
+
+  // Memoize derived values for performance
+  const motivationalMessage = React.useMemo(getMotivationalMessage, [latestPrediction]);
+  const healthScore = React.useMemo(getHealthScore, [latestPrediction]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -155,7 +176,7 @@ export function PatientDashboard() {
         />
         <View style={styles.heroOverlay}>
           <Text style={styles.heroGreeting}>Hello, {user?.full_name?.split(' ')[0]}! 👋</Text>
-          <Text style={styles.heroMessage}>{getMotivationalMessage()}</Text>
+          <Text style={styles.heroMessage}>{motivationalMessage}</Text>
         </View>
       </View>
 
@@ -171,13 +192,13 @@ export function PatientDashboard() {
           </View>
           
           <View style={styles.scoreCircle}>
-            <Text style={styles.scoreNumber}>{getHealthScore()}</Text>
+            <Text style={styles.scoreNumber}>{healthScore}</Text>
             <Text style={styles.scoreOutOf}>/100</Text>
           </View>
           
           <View style={styles.riskBadge}>
             <Text style={[styles.riskText, { color: getRiskColor(latestPrediction.risk_category) }]}>
-              {latestPrediction.risk_category.toUpperCase()} RISK
+              {latestPrediction.risk_category.replace('_', ' ').toUpperCase()} RISK
             </Text>
           </View>
         </View>
@@ -200,124 +221,55 @@ export function PatientDashboard() {
         </View>
       )}
 
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => router.push('/assessment')}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
-              <Target size={24} color="#1976D2" />
-            </View>
-            <Text style={styles.actionTitle}>Health Check</Text>
-            <Text style={styles.actionSubtitle}>Quick assessment</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => router.push('/location')}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#E8F5E8' }]}>
-              <Heart size={24} color="#388E3C" />
-            </View>
-            <Text style={styles.actionTitle}>Find Care</Text>
-            <Text style={styles.actionSubtitle}>Nearby clinics</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Stats Overview */}
-      <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Your Progress</Text>
+      {/* Key Metrics */}
+      {submissions.length > 0 && (
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <TrendingUp size={20} color="#0066CC" />
-            </View>
+            <Calendar size={24} color="#0066CC" />
             <Text style={styles.statNumber}>{submissions.length}</Text>
             <Text style={styles.statLabel}>Assessments</Text>
           </View>
-
           <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <CheckCircle size={20} color="#28A745" />
-            </View>
+            <Clock size={24} color="#FFA500" />
+            <Text style={styles.statNumber}>
+              {submissions.filter(s => s.status === 'pending').length}
+            </Text>
+            <Text style={styles.statLabel}>Pending Review</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Target size={24} color="#28A745" />
             <Text style={styles.statNumber}>{totalRecommendations}</Text>
-            <Text style={styles.statLabel}>Tips Received</Text>
+            <Text style={styles.statLabel}>Recommendations</Text>
           </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Calendar size={20} color="#FF9800" />
-            </View>
-            <Text style={styles.statNumber}>{submissions.length > 0 ? Math.floor((Date.now() - new Date(submissions[0].submitted_at).getTime()) / (1000 * 60 * 60 * 24)) : 0}</Text>
-            <Text style={styles.statLabel}>Days Active</Text>
-          </View>
-        </View>
-      </View>
-
-      {submissions.length > 0 && (
-        <View style={styles.historySection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {submissions.slice(0, 3).map((submission) => (
-            <View key={submission.id} style={styles.historyCard}>
-              <View style={styles.submissionHeader}>
-                <View>
-                  <Text style={styles.submissionDate}>
-                    {new Date(submission.submitted_at).toLocaleDateString()}
-                  </Text>
-                  {submission.risk_predictions?.[0] && (
-                    <Text style={styles.submissionRisk}>
-                      Score: {submission.risk_predictions[0].risk_score}
-                    </Text>
-                  )}
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    submission.status === 'reviewed'
-                      ? styles.statusReviewed
-                      : styles.statusPending,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      submission.status === 'reviewed'
-                        ? styles.statusTextReviewed
-                        : styles.statusTextPending,
-                    ]}
-                  >
-                    {submission.status}
-                  </Text>
-                </View>
-              </View>
-              {submission.recommendations && submission.recommendations.length > 0 && (
-                <Text style={styles.submissionRecommendations}>
-                  {submission.recommendations.length} recommendation(s) available
-                </Text>
-              )}
-            </View>
-          ))}
         </View>
       )}
 
-      {/* Bottom CTA */}
+      {/* Latest Recommendations */}
+      {submissions[0]?.recommendations && submissions[0].recommendations.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Latest Recommendations</Text>
+          <View style={styles.recommendationsList}>
+            {submissions[0].recommendations.slice(0, 3).map((rec, index) => (
+              <View key={`${rec.content}-${index}`} style={styles.recommendationCard}>
+                <View style={[styles.recommendationIcon, { backgroundColor: rec.type === 'lifestyle' ? '#D1FAE5' : '#FEE2E2' }]}>
+                  {rec.type === 'lifestyle' ? (
+                    <Zap size={20} color="#065F46" />
+                  ) : (
+                    <Heart size={20} color="#991B1B" />
+                  )}
+                </View>
+                <Text style={styles.recommendationText}>{rec.content}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Assessment History */}
       {submissions.length > 0 && (
-        <TouchableOpacity
-          style={styles.ctaButton}
-          onPress={() => router.push('/assessment')}
-        >
-          <Plus size={20} color="white" />
-          <Text style={styles.ctaButtonText}>Take Another Assessment</Text>
-        </TouchableOpacity>
+        <View style={styles.section}>
+          <AssessmentList />
+        </View>
       )}
     </ScrollView>
   );
@@ -335,49 +287,56 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     height: 200,
+    backgroundColor: '#0066CC',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
     position: 'relative',
-    marginBottom: 20,
   },
   heroImage: {
+    position: 'absolute',
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
   heroOverlay: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    padding: 20,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 102, 204, 0.7)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   heroGreeting: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   heroMessage: {
     fontSize: 16,
-    color: 'white',
-    opacity: 0.9,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 22,
   },
   healthScoreCard: {
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 20,
+    marginHorizontal: 24,
+    marginTop: -60,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 8,
+    alignItems: 'center',
   },
   scoreHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    width: '100%',
     marginBottom: 16,
   },
   scoreTitle: {
@@ -386,340 +345,155 @@ const styles = StyleSheet.create({
     color: '#1E293B',
   },
   scoreSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
   },
   scoreCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 8,
+    borderColor: '#0066CC',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   scoreNumber: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: '#0066CC',
+    color: '#1E293B',
   },
   scoreOutOf: {
     fontSize: 16,
+    fontWeight: '600',
     color: '#64748B',
-    marginTop: -8,
+    marginLeft: 2,
   },
   riskBadge: {
-    alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
+    backgroundColor: '#EBF4FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   riskText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   getStartedCard: {
     backgroundColor: 'white',
     borderRadius: 16,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    overflow: 'hidden',
+    padding: 24,
+    marginHorizontal: 24,
+    marginTop: -60,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 8,
   },
   getStartedContent: {
-    padding: 24,
     alignItems: 'center',
+    gap: 12,
   },
   getStartedTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1E293B',
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 8,
   },
   getStartedText: {
     fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: 20,
     lineHeight: 20,
+    marginBottom: 8,
   },
   startButton: {
     backgroundColor: '#0066CC',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
+    width: '100%',
   },
   startButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
-  quickActions: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 16,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  actionSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  statsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
   statsGrid: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 24,
+    marginTop: 24,
     gap: 12,
   },
   statCard: {
-    flex: 1,
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
-  },
-  statIconContainer: {
-    marginBottom: 8,
+    gap: 8,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1E293B',
-    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
   },
-  historySection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+  section: {
+    marginTop: 32,
+    paddingHorizontal: 24,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: '#0066CC',
-    fontWeight: '500',
-  },
-  historyCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  submissionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  submissionDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 2,
-  },
-  submissionRisk: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusReviewed: {
-    backgroundColor: '#D1FAE5',
-  },
-  statusPending: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
-  statusTextReviewed: {
-    color: '#065F46',
-  },
-  statusTextPending: {
-    color: '#92400E',
-  },
-  submissionRecommendations: {
-    fontSize: 12,
-    color: '#0066CC',
-  },
-  ctaButton: {
-    backgroundColor: '#0066CC',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    gap: 8,
-  },
-  ctaButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  welcomeTitle: {
+  sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1E293B',
-    marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  welcomeText: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+  recommendationsList: {
+    gap: 12,
   },
-  assessmentButton: {
-    backgroundColor: '#0066CC',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  assessmentButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  riskCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  riskHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  riskIconContainer: {
-    marginRight: 16,
-  },
-  riskInfo: {
-    flex: 1,
-  },
-  riskTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 4,
-  },
-  riskCategory: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  riskScoreContainer: {
-    alignItems: 'center',
-  },
-  riskScore: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#1E293B',
-  },
-  riskScoreLabel: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  submissionCard: {
+  recommendationCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  newAssessmentButton: {
-    backgroundColor: 'white',
-    flexDirection: 'row',
-    alignItems: 'center',
+  recommendationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EBF4FF',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-    gap: 8,
-    marginBottom: 24,
+    alignItems: 'center',
   },
-  newAssessmentButtonText: {
-    color: '#0066CC',
-    fontWeight: '600',
-  }
+  recommendationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+  },
 });
