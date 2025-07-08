@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Activity, MapPin, User } from 'lucide-react-native';
+import { Chrome as Home, Activity, MapPin, User } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 
 import { View } from 'react-native';
