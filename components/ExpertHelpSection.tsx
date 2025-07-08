@@ -308,7 +308,8 @@ export function ExpertHelpSection() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 32,
+    marginBottom: 24,
+    paddingHorizontal: 24,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -324,7 +325,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
-    paddingHorizontal: 24,
   },
   headerContent: {
     flexDirection: 'row',
@@ -364,17 +364,18 @@ const styles = StyleSheet.create({
     color: '#0066CC',
   },
   doctorsScroll: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   doctorsContainer: {
-    paddingHorizontal: 24,
+    paddingLeft: 0,
+    paddingRight: 24,
     gap: 16,
   },
   doctorCard: {
-    width: 280,
+    width: 260,
     backgroundColor: 'white',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -509,9 +510,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     backgroundColor: 'white',
-    marginHorizontal: 24,
+    marginHorizontal: 0,
     borderRadius: 12,
-    paddingVertical: 20,
+    paddingVertical: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

@@ -182,7 +182,9 @@ export function PatientDashboard() {
       </View>
 
       {/* Expert Help Section */}
-      <ExpertHelpSection />
+      <View style={styles.expertHelpContainer}>
+        <ExpertHelpSection />
+      </View>
 
       {/* Health Score Card */}
       {latestPrediction ? (
@@ -505,5 +507,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     flex: 1,
     minHeight: 300,
+  },
+  expertHelpContainer: {
+    marginTop: 24,
+    marginBottom: 16,
   },
 });
