@@ -358,19 +358,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'baseline',
   },
   scoreNumber: {
     fontSize: 40,
     fontWeight: 'bold',
     color: '#1E293B',
+    textAlign: 'center',
+    lineHeight: 40,
   },
   scoreOutOf: {
     fontSize: 16,
     fontWeight: '600',
     color: '#64748B',
-    marginLeft: 2,
+    textAlign: 'center',
+    marginTop: 2,
   },
   riskBadge: {
     backgroundColor: '#EBF4FF',
