@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 export interface DiabetesTask {
@@ -212,6 +213,10 @@ export async function completeTask(taskId: string): Promise<void> {
 
     // Send congratulatory notification for streaks
     if (newStreak > 0 && newStreak % 7 === 0) {
+      if (Platform.OS === 'web') {
+        // Skip notifications on web
+        return;
+      }
       await Notifications.scheduleNotificationAsync({
         content: {
           title: '🎉 Streak Achievement!',
@@ -248,6 +253,10 @@ export async function addBloodSugarReading(
 
     // Check if reading is concerning and send notification
     if (reading < 70 || reading > 180) {
+      if (Platform.OS === 'web') {
+        // Skip notifications on web
+        return;
+      }
       const message = reading < 70 
         ? 'Your blood sugar is low. Consider having a quick-acting carbohydrate.'
         : 'Your blood sugar is high. Consider checking with your healthcare provider.';
@@ -309,6 +318,10 @@ export async function addMedicationReminder(
 
     if (error) throw error;
 
+    if (Platform.OS === 'web') {
+      // Skip notifications on web
+      return;
+    }
     // Schedule notifications for each time
     for (const time of times) {
       const [hours, minutes] = time.split(':').map(Number);

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Platform,
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,6 +15,7 @@ import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Cloc
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import AssessmentList from './AssessmentList';
+import { DiabetesQuickActions } from './DiabetesQuickActions';
 import { DiabetesManagementCard } from './DiabetesManagementCard';
 
 const { width } = Dimensions.get('window');
@@ -187,6 +189,9 @@ export function PatientDashboard() {
         </View>
       </View>
 
+      {/* Quick Actions for Diabetes Management */}
+      <DiabetesQuickActions />
+
       {/* Diabetes Management for existing diabetics */}
       {latestPrediction && (
         latestPrediction.risk_category === 'high' || 
@@ -194,7 +199,7 @@ export function PatientDashboard() {
       ) && (
         <DiabetesManagementCard riskCategory={latestPrediction.risk_category} />
       )}
-
+      
       {/* Health Score Card */}
       {latestPrediction ? (
         <View style={styles.healthScoreCard}>

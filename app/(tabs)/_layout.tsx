@@ -76,6 +76,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="diabetes-dashboard"
+        options={{
+          href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
         name="AssessmentDetailsScreen"
         options={{
           href: null, // Hide from tab bar
