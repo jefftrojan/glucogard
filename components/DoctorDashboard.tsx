@@ -279,7 +279,7 @@ export function DoctorDashboard() {
                     {submission.status === 'reviewed' ? 'Reviewed' : 'Pending'}
                   </Text>
                 </View>
-              </div>
+              </View>
             </View>
             
             {submission.risk_predictions?.[0] && (
