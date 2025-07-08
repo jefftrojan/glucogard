@@ -107,6 +107,8 @@ export async function saveResearchPreferences(
         allow_trend_analysis: preferences.allowTrendAnalysis,
         allow_public_health_reporting: preferences.allowPublicHealthReporting,
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
       });
 
     if (error) throw error;
