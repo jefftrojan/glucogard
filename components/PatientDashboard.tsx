@@ -15,7 +15,7 @@ import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Cloc
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import AssessmentList from './AssessmentList';
-import { DiabetesQuickActions } from './DiabetesQuickActions';
+import { DiabetesQuickActions } from './DiabetesQuickActions.tsx';
 import { DiabetesManagementCard } from './DiabetesManagementCard';
 
 const { width } = Dimensions.get('window');
