@@ -237,23 +237,6 @@ export function PatientDashboard() {
             </Text>
           </View>
         </View>
-      ) : (
-        <View style={styles.getStartedCard}>
-          <View style={styles.getStartedContent}>
-            <Zap size={32} color="#0066CC" />
-            <Text style={styles.getStartedTitle}>Ready to Begin?</Text>
-            <Text style={styles.getStartedText}>
-              Take your first health assessment to unlock personalized insights
-            </Text>
-            <TouchableOpacity
-              style={styles.startButton}
-              onPress={() => router.push('/assessment')}
-            >
-              <Text style={styles.startButtonText}>Start Your Journey</Text>
-              <ArrowRight size={20} color="white" />
-            </TouchableOpacity>
-          </View>
-        </View>
       )}
 
       {/* Only show Get Started card for first-time users with no assessments */}
