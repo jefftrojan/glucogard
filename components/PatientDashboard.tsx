@@ -14,7 +14,6 @@ import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Cloc
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import AssessmentList from './AssessmentList';
-import { ExpertHelpSection } from './ExpertHelpSection';
 
 const { width } = Dimensions.get('window');
 
@@ -179,11 +178,6 @@ export function PatientDashboard() {
           <Text style={styles.heroGreeting}>Hello, {user?.full_name?.split(' ')[0]}! 👋</Text>
           <Text style={styles.heroMessage}>{motivationalMessage}</Text>
         </View>
-      </View>
-
-      {/* Expert Help Section */}
-      <View style={styles.expertHelpContainer}>
-        <ExpertHelpSection />
       </View>
 
       {/* Health Score Card */}
@@ -507,8 +501,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     flex: 1,
     minHeight: 300,
-  },
-  expertHelpContainer: {
-    marginBottom: 24,
   },
 });
