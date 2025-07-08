@@ -64,23 +64,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, loading, segments, router]);
 
   const handleSignOut = async () => {
-    setLoading(true);
-    await supabase.auth.signOut();
-    setUser(null);
-    
-    // Clear AsyncStorage
     try {
-      await AsyncStorage.removeItem('selectedRole');
-      await AsyncStorage.removeItem('hasSeenOnboarding');
-      await AsyncStorage.removeItem('hasSeenDashboard');
-    } catch (e) {
-      console.error('Error clearing AsyncStorage during sign out:', e);
-    }
+      setLoading(true);
+      await supabase.auth.signOut();
+      setUser(null);
     
-    // Force navigation to auth screen after a short delay
-    setTimeout(() => {
-      router.replace('/auth');
-    }, 100);
+      // Clear AsyncStorage
+      try {
+        await AsyncStorage.removeItem('selectedRole');
+        await AsyncStorage.removeItem('hasSeenOnboarding');
+        await AsyncStorage.removeItem('hasSeenDashboard');
+      } catch (e) {
+        console.error('Error clearing AsyncStorage during sign out:', e);
+      }
+    
+      // Force navigation to auth screen after a short delay
+      setTimeout(() => {
+        router.replace('/auth');
+      }, 100);
     } catch (error) {
       console.error('Error during sign out:', error);
     } finally {
