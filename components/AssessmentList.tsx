@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, Clock, CheckCircle, AlertTriangle, FileText, ChevronRight } from 'lucide-react-native';
+import { Calendar, Clock, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, FileText, ChevronRight } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { type Json } from '@/types/database';
