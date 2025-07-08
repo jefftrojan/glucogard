@@ -14,6 +14,7 @@ import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Cloc
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import AssessmentList from './AssessmentList';
+import { DiabetesManagementCard } from './DiabetesManagementCard';
 
 const { width } = Dimensions.get('window');
 
@@ -185,6 +186,14 @@ export function PatientDashboard() {
           <Text style={styles.heroMessage}>{motivationalMessage}</Text>
         </View>
       </View>
+
+      {/* Diabetes Management for existing diabetics */}
+      {latestPrediction && (
+        latestPrediction.risk_category === 'high' || 
+        latestPrediction.risk_category === 'critical'
+      ) && (
+        <DiabetesManagementCard riskCategory={latestPrediction.risk_category} />
+      )}
 
       {/* Health Score Card */}
       {latestPrediction ? (

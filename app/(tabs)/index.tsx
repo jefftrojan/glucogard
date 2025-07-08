@@ -78,21 +78,9 @@ export default function DashboardScreen() {
       </View>
 
       {user.role === 'patient' ? (
-        <View>
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <PatientDashboard />
-          <Text style={styles.assessmentTitle}>Your Assessments</Text>
-          <ScrollView style={styles.assessmentList}>
-            {assessments.map((assessment) => (
-              <TouchableOpacity
-                key={assessment.id}
-                style={styles.assessmentItem}
-                onPress={() => navigateToAssessmentDetails(assessment.id)}
-              >
-                <Text style={styles.assessmentItemText}>Assessment {assessment.id}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        </ScrollView>
       ) : (
         <DoctorDashboard />
       )}
@@ -135,20 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginTop: 20,
   },
-  assessmentList: {
-    paddingHorizontal: 24,
-    marginTop: 10,
-  },
-  assessmentItem: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  assessmentItemText: {
-    fontSize: 16,
-    color: '#1E293B',
+  scrollContainer: {
+    flex: 1,
   },
 });
