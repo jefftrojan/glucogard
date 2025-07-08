@@ -53,7 +53,7 @@ def predict_risk(data: DiabetesInput):
     prediction = model.predict(scaled_features)[0]
     probability = model.predict_proba(scaled_features)[0]
     
-    risk_category_keys = ['non_diabetic', 'low', 'moderate', 'high', 'critical']
+    risk_category_keys = ['non-diabetic', 'low', 'moderate', 'high', 'critical']
     risk_category_display = ['Non-diabetic', 'Low Risk', 'Moderate Risk', 'High Risk', 'Critical Risk']
     
     return {

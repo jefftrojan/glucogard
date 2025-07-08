@@ -81,7 +81,7 @@ const AssessmentList = () => {
 
   const getRiskColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'non_diabetic':
+      case 'non-diabetic':
         return '#10B981';
       case 'low':
         return '#28A745';
@@ -98,7 +98,7 @@ const AssessmentList = () => {
 
   const getRiskIcon = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'non_diabetic':
+      case 'non-diabetic':
       case 'low':
         return CheckCircle;
       case 'moderate':

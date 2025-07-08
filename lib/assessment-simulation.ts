@@ -1,6 +1,6 @@
 // Simulated assessment endpoint for when the real AI service is unavailable
 export interface SimulatedRiskPrediction {
-  risk_category: 'non_diabetic' | 'low' | 'moderate' | 'high' | 'critical';
+  risk_category: 'non-diabetic' | 'low' | 'moderate' | 'high' | 'critical';
   risk_level: number;
   probabilities: {
     'Non-diabetic': number;
@@ -131,7 +131,7 @@ export function simulateRiskPrediction(answers: Record<string, any>): SimulatedR
   let riskLevel: number;
 
   if (riskScore <= 20) {
-    riskCategory = 'non_diabetic';
+    riskCategory = 'non-diabetic';
     riskLevel = 0;
   } else if (riskScore <= 35) {
     riskCategory = 'low';

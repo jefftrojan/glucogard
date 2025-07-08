@@ -96,7 +96,7 @@ export function PatientDashboard() {
 
   const getMotivationalMessage = () => {
     switch (latestPrediction?.risk_category.toLowerCase()) {
-      case 'non_diabetic':
+      case 'non-diabetic':
         return "Excellent results! You're doing great. ✅";
       case 'low':
         return "Great job! Keep up the healthy habits! 🌟";
@@ -128,7 +128,7 @@ export function PatientDashboard() {
 
   const getRiskColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'non_diabetic':
+      case 'non-diabetic':
         return '#10B981';
       case 'low':
         return '#28A745';
@@ -145,7 +145,7 @@ export function PatientDashboard() {
 
   const getRiskIcon = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'non_diabetic':
+      case 'non-diabetic':
         return CheckCircle;
       case 'low':
         return CheckCircle;

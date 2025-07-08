@@ -140,7 +140,7 @@ export default function AssessmentDetailsScreen() {
 
   const getRiskColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'non_diabetic':
+      case 'non-diabetic':
         return '#10B981';
       case 'low':
         return '#28A745';
@@ -157,7 +157,7 @@ export default function AssessmentDetailsScreen() {
 
   const getRiskIcon = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'non_diabetic':
+      case 'non-diabetic':
       case 'low':
         return CheckCircle;
       case 'moderate':

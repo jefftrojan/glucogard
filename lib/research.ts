@@ -122,7 +122,7 @@ export async function getResearchPreferences(userId: string): Promise<ResearchPr
       .from('research_preferences')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
 
@@ -196,7 +196,7 @@ export async function anonymizeAndExportHealthData(
       age_group: getAgeGroup(submission.patients.age || 0),
       gender: submission.patients.gender || 'unknown',
       location_type: locationType,
-      risk_category: riskPrediction?.risk_category || 'unknown',
+      risk_category: riskPrediction?.risk_category.replace('_', '-') || 'unknown',
       risk_score: riskPrediction?.risk_score || 0,
       activity_level: answers['activity-level'] || 'unknown',
       diet_habits: answers['diet-habits'] || 'unknown',
@@ -241,7 +241,7 @@ export async function generatePublicHealthMetrics(): Promise<PublicHealthMetrics
         acc[record.risk_category as keyof typeof acc] = (acc[record.risk_category as keyof typeof acc] || 0) + 1;
         return acc;
       },
-      { low: 0, moderate: 0, critical: 0, high: 0, non_diabetic: 0 }
+      { low: 0, moderate: 0, critical: 0, high: 0, 'non-diabetic': 0 }
     );
 
     // Calculate demographic breakdown
