@@ -82,7 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => {
         router.replace('/auth');
       }, 100);
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error during sign out:', error);
     } finally {
       setLoading(false);
