@@ -267,7 +267,7 @@ export function PatientDashboard() {
 
       {/* Assessment History */}
       {submissions.length > 0 && (
-        <View style={styles.section}>
+        <View style={styles.assessmentSection}>
           <AssessmentList />
         </View>
       )}
@@ -495,5 +495,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     lineHeight: 20,
+  },
+  assessmentSection: {
+    marginTop: 32,
+    paddingHorizontal: 24,
+    flex: 1,
+    minHeight: 300,
   },
 });
