@@ -172,7 +172,13 @@ export default function AssessmentDetailsScreen() {
 
   const getHealthScore = () => {
     if (!assessment?.risk_predictions?.[0]) return 0;
-    return Math.max(0, 100 - (assessment.risk_predictions[0].risk_score || 0));
+    // Convert risk_score (0-4 scale) to health score (0-100 scale)
+    const riskScore = assessment.risk_predictions[0].risk_score || 0;
+    if (riskScore === 0) return 95; // Non-diabetic
+    if (riskScore === 1) return 80; // Low risk
+    if (riskScore === 2) return 60; // Moderate risk
+    if (riskScore === 3) return 40; // High risk
+    return 20; // Critical risk
   };
 
   const formatDate = (dateString: string) => {

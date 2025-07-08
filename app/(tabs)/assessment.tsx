@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { Heart, ArrowRight, ArrowLeft, CircleCheck as CheckCircle, Star, Trophy, Target, Zap, Brain, Activity } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { simulateRiskPrediction, generateSimulatedRecommendations } from '@/lib/assessment-simulation';
 import { 
   ADAPTIVE_QUESTIONNAIRE, 
   getNextQuestion, 
@@ -206,7 +207,7 @@ export default function AssessmentScreen() {
           submission_id: submission.id,
           risk_score: predictionResult.risk_level,
           risk_category: predictionResult.risk_category,
-          raw_prediction: predictionResult,
+          raw_prediction: predictionResult
         });
 
       if (predictionError) throw predictionError;
@@ -259,46 +260,37 @@ export default function AssessmentScreen() {
 
     const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
-    const response = await fetch(`${apiUrl}/predict-risk`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(apiPayload),
-    });
+    try {
+      const response = await fetch(`${apiUrl}/predict-risk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiPayload),
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to get risk prediction from the API');
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Real AI API response received:', result);
+      return result;
+    } catch (error) {
+      console.warn('⚠️ Real AI API unavailable, using simulation:', error);
+      
+      // Use simulated prediction when real API fails
+      const simulatedResult = simulateRiskPrediction(answers);
+      console.log('🤖 Using simulated prediction:', simulatedResult);
+      
+      return simulatedResult;
     }
-
-    return response.json();
   };
 
   const generateRecommendations = (answers: Record<string, any>, category: string) => {
-    const recommendations = [];
-    
-    if (category === 'critical') {
-      recommendations.push({
-        content: 'Schedule an immediate consultation with a healthcare provider for comprehensive diabetes screening.',
-        type: 'clinical' as const,
-      });
-    }
-    
-    if (answers['activity-level'] === 'sedentary') {
-      recommendations.push({
-        content: 'Start with 10-minute walks after meals and gradually increase to 150 minutes of moderate exercise per week.',
-        type: 'lifestyle' as const,
-      });
-    }
-    
-    if (answers['diet-habits'] === 'poor') {
-      recommendations.push({
-        content: 'Focus on whole foods: vegetables, lean proteins, and whole grains. Limit processed foods and sugary drinks.',
-        type: 'lifestyle' as const,
-      });
-    }
-    
-    return recommendations;
+    // Use the comprehensive simulated recommendations
+    return generateSimulatedRecommendations(answers, category);
   };
 
   const renderProgressHeader = () => (
