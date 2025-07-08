@@ -281,19 +281,6 @@ export function ExpertHelpSection() {
             </AnimatedTouchableOpacity>
           ))}
 
-          {/* Add Doctor Card */}
-          <TouchableOpacity style={styles.addDoctorCard}>
-            <View style={styles.addDoctorIcon}>
-              <Users size={32} color="#0066CC" />
-            </View>
-            <Text style={styles.addDoctorTitle}>Join as Doctor</Text>
-            <Text style={styles.addDoctorText}>
-              Are you a healthcare professional? Join our platform to help patients.
-            </Text>
-            <TouchableOpacity style={styles.joinButton}>
-              <Text style={styles.joinButtonText}>Learn More</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
         </ScrollView>
       </Animated.View>
 
@@ -517,51 +504,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EBF4FF',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  addDoctorCard: {
-    width: 280,
-    backgroundColor: '#F8FAFB',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    borderStyle: 'dashed',
-  },
-  addDoctorIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#EBF4FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  addDoctorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  addDoctorText: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  joinButton: {
-    backgroundColor: '#0066CC',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  joinButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
   },
   statsContainer: {
     flexDirection: 'row',
