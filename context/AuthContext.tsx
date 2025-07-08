@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser, type AuthUser } from '@/lib/auth';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
@@ -65,6 +66,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    
+    // Clear AsyncStorage
+    try {
+      await AsyncStorage.removeItem('selectedRole');
+      await AsyncStorage.removeItem('hasSeenOnboarding');
+      await AsyncStorage.removeItem('hasSeenDashboard');
+    } catch (e) {
+      console.error('Error clearing AsyncStorage during sign out:', e);
+    }
+    
+    // Force navigation to auth screen
+    router.replace('/auth');
   };
 
   return (

@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft, Eye, EyeOff, User, Mail, Lock, Zap, Heart, Stethoscope, CircleCheck as CheckCircle, Sparkles, Star, Trophy } from 'lucide-react-native';
 import { signUp, type UserRole } from '@/lib/auth';
 import Animated, {
+  cancelAnimation,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -158,6 +159,7 @@ export default function RegisterScreen() {
       ]);
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create account');
+      cancelAnimation(buttonScale);
       
       // Error shake animation
       buttonScale.value = withSequence(

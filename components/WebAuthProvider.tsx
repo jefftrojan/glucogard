@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 
 interface WebAuthUser {
   id: string;
@@ -20,6 +21,7 @@ const WebAuthContext = createContext<WebAuthContextType | undefined>(undefined);
 export function WebAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<WebAuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -72,6 +74,9 @@ export function WebAuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     setUser(null);
+    
+    // Navigate to auth screen after logout
+    router.replace('/auth');
   };
 
   return (

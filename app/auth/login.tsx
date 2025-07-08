@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, Zap, Heart, Stethoscope, CircleCheck as CheckCircle, Sparkles } from 'lucide-react-native';
 import { signIn } from '@/lib/auth';
 import Animated, {
+  cancelAnimation,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -95,11 +96,29 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Missing Information', 'Please fill in all fields');
+      
+      // Error shake animation
+      buttonScale.value = withSequence(
+        withTiming(0.95, { duration: 100 }),
+        withTiming(1.05, { duration: 100 }),
+        withTiming(0.95, { duration: 100 }),
+        withTiming(1, { duration: 100 })
+      );
+      
       return;
     }
 
     if (!email.includes('@')) {
       Alert.alert('Invalid Email', 'Please enter a valid email address');
+      
+      // Error shake animation
+      buttonScale.value = withSequence(
+        withTiming(0.95, { duration: 100 }),
+        withTiming(1.05, { duration: 100 }),
+        withTiming(0.95, { duration: 100 }),
+        withTiming(1, { duration: 100 })
+      );
+      
       return;
     }
 
@@ -116,6 +135,7 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
+      cancelAnimation(buttonScale);
       
       // Error shake animation
       buttonScale.value = withSequence(

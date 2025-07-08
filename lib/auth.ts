@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Database } from '@/types/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type UserRole = 'patient' | 'doctor';
 
@@ -49,6 +50,15 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) {
     throw error;
+  }
+  
+  // Clear any stored data in AsyncStorage
+  try {
+    await AsyncStorage.removeItem('selectedRole');
+    await AsyncStorage.removeItem('hasSeenOnboarding');
+    await AsyncStorage.removeItem('hasSeenDashboard');
+  } catch (e) {
+    console.error('Error clearing AsyncStorage during sign out:', e);
   }
 }
 
