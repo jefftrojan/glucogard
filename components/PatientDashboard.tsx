@@ -509,7 +509,6 @@ const styles = StyleSheet.create({
     minHeight: 300,
   },
   expertHelpContainer: {
-    marginTop: 24,
-    marginBottom: 16,
+    marginBottom: 24,
   },
 });
