@@ -67,6 +67,8 @@ export function WebAuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    setLoading(true);
+    try {
     await fetch('/web-auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -75,8 +77,15 @@ export function WebAuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(null);
     
-    // Navigate to auth screen after logout
-    router.replace('/auth');
+    // Navigate to auth screen after logout with a short delay
+    setTimeout(() => {
+      router.replace('/auth');
+    }, 100);
+    } catch (error) {
+      console.error('Error during web sign out:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

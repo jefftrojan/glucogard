@@ -53,7 +53,7 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
-      'Are you sure you want to sign out?',
+      'Are you sure you want to sign out of your account?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -61,10 +61,13 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await signOut();
-              router.replace('/auth');
+              setLoading(true);
+              await signOut(); // This function is from useAuth context
+              // The router.replace is now handled inside the signOut function
             } catch (error: any) {
               Alert.alert('Error', error.message);
+            } finally {
+              setLoading(false);
             }
           },
         },
@@ -75,6 +78,7 @@ export default function ProfileScreen() {
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
       Alert.alert('Error', 'Name cannot be empty');
+      setEditing(false);
       return;
     }
 

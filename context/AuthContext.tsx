@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, loading, segments, router]);
 
   const handleSignOut = async () => {
+    setLoading(true);
     await supabase.auth.signOut();
     setUser(null);
     
@@ -76,8 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error clearing AsyncStorage during sign out:', e);
     }
     
-    // Force navigation to auth screen
-    router.replace('/auth');
+    // Force navigation to auth screen after a short delay
+    setTimeout(() => {
+      router.replace('/auth');
+    }, 100);
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
