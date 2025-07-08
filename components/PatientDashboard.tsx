@@ -93,6 +93,32 @@ export function PatientDashboard() {
 
   const latestPrediction = getLatestPrediction();
 
+  const getMotivationalMessage = () => {
+    switch (latestPrediction?.risk_category.toLowerCase()) {
+      case 'non_diabetic':
+        return "Excellent results! You're doing great. ✅";
+      case 'low':
+        return "Great job! Keep up the healthy habits! 🌟";
+      case 'moderate':
+        return "You're on the right track! Small changes make big differences 💪";
+      case 'high':
+        return "It's time to focus on your health. We're here to help. 🤝";
+      case 'critical':
+        return "Let's work together to improve your health 🎯";
+      default:
+        return "Ready to start your health journey?";
+    }
+  };
+
+  const getHealthScore = () => {
+    if (!latestPrediction) return 0;
+    return Math.max(0, 100 - (latestPrediction.risk_score || 0));
+  };
+
+  // Memoize derived values for performance
+  const motivationalMessage = React.useMemo(getMotivationalMessage, [latestPrediction]);
+  const healthScore = React.useMemo(getHealthScore, [latestPrediction]);
+
   const getRiskColor = (category: string) => {
     switch (category?.toLowerCase()) {
       case 'non_diabetic':
@@ -139,32 +165,6 @@ export function PatientDashboard() {
     (acc, sub) => acc + (sub.recommendations?.length || 0),
     0
   );
-
-  const getMotivationalMessage = () => {
-    switch (latestPrediction?.risk_category.toLowerCase()) {
-      case 'non_diabetic':
-        return "Excellent results! You're doing great. ✅";
-      case 'low':
-        return "Great job! Keep up the healthy habits! 🌟";
-      case 'moderate':
-        return "You're on the right track! Small changes make big differences 💪";
-      case 'high':
-        return "It's time to focus on your health. We're here to help. 🤝";
-      case 'critical':
-        return "Let's work together to improve your health 🎯";
-      default:
-        return "Ready to start your health journey?";
-    }
-  };
-
-  const getHealthScore = () => {
-    if (!latestPrediction) return 0;
-    return Math.max(0, 100 - (latestPrediction.risk_score || 0));
-  };
-
-  // Memoize derived values for performance
-  const motivationalMessage = React.useMemo(getMotivationalMessage, [latestPrediction]);
-  const healthScore = React.useMemo(getHealthScore, [latestPrediction]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
