@@ -237,7 +237,7 @@ export function PatientDashboard() {
             </Text>
           </View>
         </View>
-      )}
+      ) : null}
 
       {/* Only show Get Started card for first-time users with no assessments */}
       {!latestPrediction && isFirstTime && (
