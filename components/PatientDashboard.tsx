@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import AssessmentList from './AssessmentList';
 import { DiabetesQuickActions } from './DiabetesQuickActions.tsx';
 import { DiabetesManagementCard } from './DiabetesManagementCard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -40,11 +41,25 @@ export function PatientDashboard() {
   const router = useRouter();
   const [submissions, setSubmissions] = useState<HealthSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFirstTime, setIsFirstTime] = useState(false);
 
   useEffect(() => {
     fetchSubmissions();
+    checkFirstTimeUser();
   }, []);
 
+  const checkFirstTimeUser = async () => {
+    try {
+      const hasSeenDashboard = await AsyncStorage.getItem('hasSeenDashboard');
+      if (!hasSeenDashboard) {
+        setIsFirstTime(true);
+        // Mark that user has now seen the dashboard
+        await AsyncStorage.setItem('hasSeenDashboard', 'true');
+      }
+    } catch (error) {
+      console.error('Error checking first time user:', error);
+    }
+  };
   const fetchSubmissions = async () => {
     if (!user) return;
 
@@ -233,6 +248,26 @@ export function PatientDashboard() {
             <TouchableOpacity
               style={styles.startButton}
               onPress={() => router.push('/assessment')}
+            >
+              <Text style={styles.startButtonText}>Start Your Journey</Text>
+              <ArrowRight size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Only show Get Started card for first-time users with no assessments */}
+      {!latestPrediction && isFirstTime && (
+        <View style={styles.getStartedCard}>
+          <View style={styles.getStartedContent}>
+            <Zap size={32} color="#0066CC" />
+            <Text style={styles.getStartedTitle}>Ready to Begin?</Text>
+            <Text style={styles.getStartedText}>
+              Take your first health assessment to unlock personalized insights
+            </Text>
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={() => router.push('/(tabs)/assessment')}
             >
               <Text style={styles.startButtonText}>Start Your Journey</Text>
               <ArrowRight size={20} color="white" />
