@@ -10,22 +10,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { 
-  Heart, 
-  Droplets, 
-  Pill, 
-  Activity, 
-  Calendar, 
-  Plus, 
-  TrendingUp,
-  Clock,
-  Target,
-  Zap,
-  X,
-  CircleCheck as CheckCircle,
-  Bell,
-  BarChart3
-} from 'lucide-react-native';
+import { Heart, Droplets, Pill, Activity, Calendar, Plus, TrendingUp, Clock, Target, Zap, X, CircleCheck as CheckCircle, Bell, ChartBar as BarChart3 } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 import {

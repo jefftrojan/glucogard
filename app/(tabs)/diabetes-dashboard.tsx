@@ -14,29 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { 
-  ArrowLeft,
-  Heart, 
-  Droplets, 
-  Pill, 
-  Activity, 
-  Calendar, 
-  Plus, 
-  TrendingUp,
-  Clock,
-  Target,
-  Zap,
-  X,
-  CircleCheck as CheckCircle,
-  Bell,
-  BarChart3,
-  Award,
-  Settings,
-  Download,
-  Share,
-  AlertTriangle,
-  Trash2
-} from 'lucide-react-native';
+import { ArrowLeft, Heart, Droplets, Pill, Activity, Calendar, Plus, TrendingUp, Clock, Target, Zap, X, CircleCheck as CheckCircle, Bell, ChartBar as BarChart3, Award, Settings, Download, Share, TriangleAlert as AlertTriangle, Trash2 } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import {
   getDailyTasks,
