@@ -10,22 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import {
-  Heart,
-  Plus,
-  Clock,
-  TrendingUp,
-  Droplets,
-  Pill,
-  Activity,
-  Target,
-  Calendar,
-  X,
-  CheckCircle,
-  AlertTriangle,
-  Zap,
-  Award,
-} from 'lucide-react-native';
+import { Heart, Plus, Clock, TrendingUp, Droplets, Pill, Activity, Target, Calendar, X, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Zap, Award } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import {
   getDailyTasks,
