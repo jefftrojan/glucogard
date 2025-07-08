@@ -418,6 +418,7 @@ export default function ProfileScreen() {
           </Text>
           
           {/* Doctor Access Link in Footer */}
+          {user.role === 'patient' && (
           <TouchableOpacity 
             style={styles.doctorAccessButton}
             onPress={() => router.push('/auth/register')}
@@ -425,6 +426,18 @@ export default function ProfileScreen() {
             <Stethoscope size={16} color="#64748B" />
             <Text style={styles.doctorAccessText}>Healthcare Provider Access</Text>
           </TouchableOpacity>
+          )}
+          
+          {/* Research Portal Link for Doctors */}
+          {user.role === 'doctor' && (
+            <TouchableOpacity 
+              style={styles.doctorAccessButton}
+              onPress={() => router.push('/(tabs)/research')}
+            >
+              <Database size={16} color="#64748B" />
+              <Text style={styles.doctorAccessText}>Research Portal</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

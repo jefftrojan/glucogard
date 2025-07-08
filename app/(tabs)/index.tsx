@@ -73,7 +73,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Dashboard</Text>
+        <Text style={styles.title}>Home</Text>
         <Text style={styles.subtitle}>Welcome back, {user.full_name}</Text>
       </View>
 

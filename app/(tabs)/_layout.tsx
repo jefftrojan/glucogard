@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Activity, MapPin, User, Database } from 'lucide-react-native';
+import { Home, Activity, MapPin, User } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 
 import { View } from 'react-native';
@@ -38,7 +38,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
+          title: 'Home',
           tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
         }}
       />
@@ -48,6 +48,7 @@ export default function TabLayout() {
         options={{
           title: 'Health Check',
           tabBarIcon: ({ size, color }) => <Activity size={size} color={color} />,
+          href: user?.role === 'patient' ? '/assessment' : null,
         }}
       />
 
@@ -60,17 +61,30 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+        }}
+      />
+      
+      {/* Hidden screens that don't appear in tabs */}
+      <Tabs.Screen
         name="research"
         options={{
-          title: 'Research',
-          tabBarIcon: ({ size, color }) => <Database size={size} color={color} />,
+          href: null, // Hide from tab bar
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="AssessmentDetailsScreen"
         options={{
-          title: 'Me',
-          tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+          href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="ResultsScreen"
+        options={{
+          href: null, // Hide from tab bar
         }}
       />
     </Tabs>
