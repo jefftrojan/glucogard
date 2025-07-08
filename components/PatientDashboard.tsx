@@ -14,6 +14,7 @@ import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Cloc
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import AssessmentList from './AssessmentList';
+import { ExpertHelpSection } from './ExpertHelpSection';
 
 const { width } = Dimensions.get('window');
 
@@ -179,6 +180,9 @@ export function PatientDashboard() {
           <Text style={styles.heroMessage}>{motivationalMessage}</Text>
         </View>
       </View>
+
+      {/* Expert Help Section */}
+      <ExpertHelpSection />
 
       {/* Health Score Card */}
       {latestPrediction ? (
