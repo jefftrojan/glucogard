@@ -623,6 +623,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     position: 'relative',
+    flexDirection: 'row',
   },
   tabBackground: {
     position: 'absolute',
@@ -643,6 +644,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   tabText: {
     fontSize: 14,
