@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { PatientDashboard } from '@/components/PatientDashboard';
-import { DoctorDashboard } from '@/components/DoctorDashboard';
+import DoctorDashboard  from '@/components/DoctorDashboard';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { type Json } from '@/types/database';

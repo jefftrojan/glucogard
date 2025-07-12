@@ -4,13 +4,14 @@ import * as Notifications from 'expo-notifications';
 
 export interface DiabetesTask {
   id: string;
+  user_id: string; // Added user_id
   type: 'medication' | 'blood_sugar' | 'exercise' | 'meal' | 'hydration' | 'foot_check' | 'weight';
   title: string;
   description: string;
   frequency: 'daily' | 'weekly' | 'monthly';
   time?: string; // HH:MM format
   completed: boolean;
-  completed_at?: string;
+  completed_at?: string | null; // Can be null if not completed
   streak: number;
   icon: string;
   color: string;
@@ -36,7 +37,7 @@ export interface MedicationReminder {
   created_at: string;
 }
 
-export const DEFAULT_DIABETES_TASKS: Omit<DiabetesTask, 'id' | 'completed' | 'completed_at' | 'streak'>[] = [
+export const DEFAULT_DIABETES_TASKS: Omit<DiabetesTask, 'id' | 'completed' | 'completed_at' | 'streak' | 'user_id'>[] = [
   {
     type: 'blood_sugar',
     title: 'Check Blood Sugar',
@@ -104,8 +105,7 @@ export const DEFAULT_DIABETES_TASKS: Omit<DiabetesTask, 'id' | 'completed' | 'co
 export async function initializeDiabetesTasks(userId: string): Promise<void> {
   try {
     // Check if user already has tasks
-    const { data: existingTasks } = await supabase
-      .from('diabetes_tasks')
+    const { data: existingTasks } = await (supabase.from('diabetes_tasks') as any)
       .select('id')
       .eq('user_id', userId)
       .limit(1);
@@ -123,13 +123,13 @@ export async function initializeDiabetesTasks(userId: string): Promise<void> {
       frequency: task.frequency,
       time: task.time,
       completed: false,
+      completed_at: null, // Ensure completed_at is explicitly null for new tasks
       streak: 0,
       icon: task.icon,
       color: task.color
     }));
 
-    const { error } = await supabase
-      .from('diabetes_tasks')
+    const { error } = await (supabase.from('diabetes_tasks') as any)
       .insert(tasksToInsert);
 
     if (error) throw error;
@@ -143,8 +143,7 @@ export async function getDailyTasks(userId: string): Promise<DiabetesTask[]> {
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    const { data, error } = await supabase
-      .from('diabetes_tasks')
+    const { data, error } = await (supabase.from('diabetes_tasks') as any)
       .select('*')
       .eq('user_id', userId)
       .order('time', { ascending: true });
@@ -153,13 +152,13 @@ export async function getDailyTasks(userId: string): Promise<DiabetesTask[]> {
 
     // Reset daily tasks if it's a new day
     const tasksToUpdate: DiabetesTask[] = [];
-    const updatedTasks = data?.map(task => {
+    const updatedTasks = data?.map((task: DiabetesTask) => { // Explicitly type task
       const lastCompleted = task.completed_at ? new Date(task.completed_at).toISOString().split('T')[0] : null;
       const shouldReset = task.frequency === 'daily' && task.completed && lastCompleted !== today;
       
       if (shouldReset) {
-        tasksToUpdate.push({ ...task, completed: false, completed_at: undefined });
-        return { ...task, completed: false, completed_at: null };
+        tasksToUpdate.push({ ...task, completed: false, completed_at: null, streak: 0 }); // Reset streak on new day if not completed
+        return { ...task, completed: false, completed_at: null, streak: 0 };
       }
       
       return task;
@@ -167,12 +166,12 @@ export async function getDailyTasks(userId: string): Promise<DiabetesTask[]> {
 
     // Update tasks that need to be reset
     if (tasksToUpdate.length > 0) {
-      const { error: updateError } = await supabase
-        .from('diabetes_tasks')
+      const { error: updateError } = await (supabase.from('diabetes_tasks') as any)
         .upsert(tasksToUpdate.map(task => ({
           id: task.id,
           completed: false,
-          completed_at: null
+          completed_at: null,
+          streak: 0 // Ensure streak is reset in DB
         })));
 
       if (updateError) console.error('Error resetting daily tasks:', updateError);
@@ -188,20 +187,40 @@ export async function getDailyTasks(userId: string): Promise<DiabetesTask[]> {
 export async function completeTask(taskId: string): Promise<void> {
   try {
     const now = new Date().toISOString();
+    const today = now.split('T')[0]; // Define today here
     
     // Get current task to update streak
-    const { data: currentTask } = await supabase
-      .from('diabetes_tasks')
+    const { data: currentTask } = await (supabase.from('diabetes_tasks') as any)
       .select('*')
       .eq('id', taskId)
       .single();
 
     if (!currentTask) throw new Error('Task not found');
 
-    const newStreak = currentTask.completed ? currentTask.streak : currentTask.streak + 1;
+    let newStreak = currentTask.streak;
+    const lastCompletedDay = currentTask.completed_at ? new Date(currentTask.completed_at).toISOString().split('T')[0] : null;
 
-    const { error } = await supabase
-      .from('diabetes_tasks')
+    if (lastCompletedDay === today) {
+      // Already completed today, no change to streak
+      newStreak = currentTask.streak;
+    } else if (lastCompletedDay) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayString = yesterday.toISOString().split('T')[0];
+
+      if (lastCompletedDay === yesterdayString) {
+        // Completed yesterday, continue streak
+        newStreak = currentTask.streak + 1;
+      } else {
+        // Not completed yesterday, reset streak
+        newStreak = 1;
+      }
+    } else {
+      // First completion, start streak
+      newStreak = 1;
+    }
+
+    const { error } = await (supabase.from('diabetes_tasks') as any)
       .update({
         completed: true,
         completed_at: now,
@@ -239,8 +258,7 @@ export async function addBloodSugarReading(
   notes?: string
 ): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('blood_sugar_readings')
+    const { error } = await (supabase.from('blood_sugar_readings') as any)
       .insert({
         user_id: userId,
         reading,
@@ -257,7 +275,7 @@ export async function addBloodSugarReading(
         // Skip notifications on web
         return;
       }
-      const message = reading < 70 
+      const message = reading < 70
         ? 'Your blood sugar is low. Consider having a quick-acting carbohydrate.'
         : 'Your blood sugar is high. Consider checking with your healthcare provider.';
 
@@ -276,22 +294,41 @@ export async function addBloodSugarReading(
   }
 }
 
-export async function getBloodSugarHistory(userId: string, days: number = 30): Promise<BloodSugarReading[]> {
+export async function getBloodSugarHistory(userId: string, days: number = 90): Promise<BloodSugarReading[]> {
   try {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const { data, error } = await supabase
-      .from('blood_sugar_readings')
+    const { data, error } = await (supabase.from('blood_sugar_readings') as any)
       .select('*')
       .eq('user_id', userId)
       .gte('recorded_at', startDate.toISOString())
       .order('recorded_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return data as BloodSugarReading[] || [];
   } catch (error) {
     console.error('Error fetching blood sugar history:', error);
+    return [];
+  }
+}
+
+export async function getCompletedTasksHistory(userId: string, days: number = 90): Promise<DiabetesTask[]> {
+  try {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const { data, error } = await (supabase.from('diabetes_tasks') as any)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('completed', true)
+      .gte('completed_at', startDate.toISOString())
+      .order('completed_at', { ascending: false });
+
+    if (error) throw error;
+    return data as DiabetesTask[] || [];
+  } catch (error) {
+    console.error('Error fetching completed tasks history:', error);
     return [];
   }
 }
@@ -304,8 +341,7 @@ export async function addMedicationReminder(
   times: string[]
 ): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('medication_reminders')
+    const { error } = await (supabase.from('medication_reminders') as any)
       .insert({
         user_id: userId,
         medication_name: medicationName,
@@ -333,6 +369,7 @@ export async function addMedicationReminder(
           sound: 'default',
         },
         trigger: {
+          channelId: 'medication-reminders', // Add a channel ID for Android
           hour: hours,
           minute: minutes,
           repeats: true,
@@ -347,15 +384,14 @@ export async function addMedicationReminder(
 
 export async function getMedicationReminders(userId: string): Promise<MedicationReminder[]> {
   try {
-    const { data, error } = await supabase
-      .from('medication_reminders')
+    const { data, error } = await (supabase.from('medication_reminders') as any)
       .select('*')
       .eq('user_id', userId)
       .eq('active', true)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return data as MedicationReminder[] || [];
   } catch (error) {
     console.error('Error fetching medication reminders:', error);
     return [];

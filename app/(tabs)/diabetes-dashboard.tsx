@@ -14,7 +14,8 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Heart, Droplets, Pill, Activity, Calendar, Plus, TrendingUp, Clock, Target, Zap, X, CircleCheck as CheckCircle, Bell, ChartBar as BarChart3, Award, Settings, Download, Share, TriangleAlert as AlertTriangle, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Heart, Droplets, Pill, Activity, Calendar as CalendarIcon, Plus, TrendingUp, Clock, Target, Zap, X, CircleCheck as CheckCircle, Bell, ChartBar as BarChart3, Award, Settings, Download, Share, TriangleAlert as AlertTriangle, Trash2 } from 'lucide-react-native';
+import { Calendar, LocaleConfig } from 'react-native-calendars'; // Import Calendar and LocaleConfig
 import { useAuth } from '@/context/AuthContext';
 import {
   getDailyTasks,
@@ -40,7 +41,7 @@ export default function DiabetesDashboardScreen() {
   const [bloodSugarHistory, setBloodSugarHistory] = useState<BloodSugarReading[]>([]);
   const [medications, setMedications] = useState<MedicationReminder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'readings' | 'medications'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'readings' | 'medications' | 'calendar'>('overview');
   
   // Modal states
   const [showBloodSugarModal, setShowBloodSugarModal] = useState(false);
@@ -187,7 +188,7 @@ export default function DiabetesDashboardScreen() {
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
-        {(['overview', 'tasks', 'readings', 'medications'] as const).map((tab) => (
+        {(['overview', 'tasks', 'readings', 'medications', 'calendar'] as const).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[
@@ -585,6 +586,16 @@ export default function DiabetesDashboardScreen() {
           </View>
         </View>
       </Modal>
+
+      {activeTab === 'calendar' && (
+        <View style={styles.tabContent}>
+          <Text style={styles.sectionTitle}>🗓️ Data Log Calendar</Text>
+          {/* Calendar component will go here */}
+          <View style={styles.calendarContainer}>
+            <Text>Calendar will be displayed here.</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1085,5 +1096,15 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  calendarContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });

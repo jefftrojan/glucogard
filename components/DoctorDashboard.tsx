@@ -7,16 +7,19 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  TextInput,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Users, TriangleAlert as AlertTriangle, Clock, CircleCheck as CheckCircle, TrendingUp, Eye } from 'lucide-react-native';
+import { Users, AlertTriangle, Clock, CheckCircle, TrendingUp, Eye, MessageSquare, MessageCircle } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { DoctorWebDashboard } from './DoctorWebDashboard';
 
 interface SubmissionWithPatient {
   id: string;
   status: 'pending' | 'reviewed';
   submitted_at: string;
+  notes?: string;
   patients: {
     id: string;
     profiles: {
@@ -29,15 +32,17 @@ interface SubmissionWithPatient {
   }[];
 }
 
-export function DoctorDashboard() {
+export default function DoctorDashboard() {
   const router = useRouter();
   const [submissions, setSubmissions] = useState<SubmissionWithPatient[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Use web dashboard for web platform
-  if (Platform.OS === 'web') {
-    return <DoctorWebDashboard />;
-  }
+  const [search, setSearch] = useState('');
+  const [selectedSort, setSelectedSort] = useState<'date' | 'name' | 'risk'>('date');
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 5;
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<SubmissionWithPatient | null>(null);
+  const [noteText, setNoteText] = useState('');
 
   useEffect(() => {
     fetchSubmissions();
@@ -51,6 +56,7 @@ export function DoctorDashboard() {
           id,
           status,
           submitted_at,
+          notes,
           patients!inner (
             id,
             profiles!inner (
@@ -72,22 +78,40 @@ export function DoctorDashboard() {
     }
   };
 
-  const pendingSubmissions = submissions.filter(s => s.status === 'pending');
-  const reviewedSubmissions = submissions.filter(s => s.status === 'reviewed');
-  const criticalCases = submissions.filter(
-    s => s.risk_predictions?.[0]?.risk_category === 'critical'
+  const sortSubmissions = (list: SubmissionWithPatient[]) => {
+    switch (selectedSort) {
+      case 'name':
+        return list.sort((a, b) => a.patients.profiles.full_name.localeCompare(b.patients.profiles.full_name));
+      case 'risk':
+        return list.sort((a, b) => (b.risk_predictions?.[0]?.risk_score || 0) - (a.risk_predictions?.[0]?.risk_score || 0));
+      default:
+        return list.sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
+    }
+  };
+
+  const filtered = submissions.filter(s =>
+    s.patients.profiles.full_name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getRiskColor = (category: string) => {
-    switch (category) {
-      case 'low':
-        return '#28A745';
-      case 'moderate':
-        return '#FFA500';
-      case 'critical':
-        return '#DC3545';
-      default:
-        return '#64748B';
+  const sorted = sortSubmissions(filtered);
+  const paginated = sorted.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+  const openDetail = (submission: SubmissionWithPatient) => {
+    setSelectedSubmission(submission);
+    setNoteText(submission.notes || '');
+    setModalVisible(true);
+  };
+
+  const saveNote = async () => {
+    if (!selectedSubmission) return;
+    const { error } = await supabase
+      .from('health_submissions')
+      .update({ notes: noteText })
+      .eq('id', selectedSubmission.id);
+
+    if (!error) {
+      fetchSubmissions();
+      setModalVisible(false);
     }
   };
 
@@ -100,306 +124,101 @@ export function DoctorDashboard() {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <Users size={24} color="#0066CC" />
-          </View>
-          <Text style={styles.statNumber}>{submissions.length}</Text>
-          <Text style={styles.statLabel}>Total Submissions</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <Clock size={24} color="#FFA500" />
-          </View>
-          <Text style={styles.statNumber}>{pendingSubmissions.length}</Text>
-          <Text style={styles.statLabel}>Pending Review</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <AlertTriangle size={24} color="#DC3545" />
-          </View>
-          <Text style={styles.statNumber}>{criticalCases.length}</Text>
-          <Text style={styles.statLabel}>Critical Cases</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
-            <CheckCircle size={24} color="#28A745" />
-          </View>
-          <Text style={styles.statNumber}>{reviewedSubmissions.length}</Text>
-          <Text style={styles.statLabel}>Reviewed</Text>
-        </View>
+    <View style={styles.container}>
+      <View style={styles.searchSortRow}>
+        <TextInput
+          placeholder="Search patient..."
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchInput}
+        />
+        <TouchableOpacity onPress={() => setSelectedSort('date')}><Text>Date</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setSelectedSort('name')}><Text>Name</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => setSelectedSort('risk')}><Text>Risk</Text></TouchableOpacity>
       </View>
 
-      {criticalCases.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <AlertTriangle size={20} color="#DC3545" />
-            <Text style={[styles.sectionTitle, { color: '#DC3545' }]}>
-              Critical Cases
-            </Text>
-          </View>
-          {criticalCases.slice(0, 3).map((submission) => (
-            <TouchableOpacity
-              key={submission.id}
-              style={[styles.submissionCard, styles.criticalCard]}
-              onPress={() => router.push(`/patients/${submission.id}`)}
-            >
-              <View style={styles.submissionHeader}>
-                <Text style={styles.patientName}>
-                  {submission.patients.profiles.full_name}
-                </Text>
-                <View style={styles.riskBadge}>
-                  <Text style={styles.riskBadgeText}>
-                    CRITICAL - {submission.risk_predictions?.[0]?.risk_score}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.submissionDate}>
-                Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
-              </Text>
-              <View style={styles.actionButton}>
-                <Eye size={16} color="#0066CC" />
-                <Text style={styles.actionButtonText}>Review Case</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Submissions</Text>
-        {submissions.slice(0, 5).map((submission) => (
-          <TouchableOpacity
-            key={submission.id}
-            style={styles.submissionCard}
-            onPress={() => router.push(`/patients/${submission.id}`)}
-          >
-            <View style={styles.submissionHeader}>
-              <Text style={styles.patientName}>
-                {submission.patients.profiles.full_name}
-              </Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  submission.status === 'reviewed'
-                    ? styles.statusReviewed
-                    : styles.statusPending,
-                ]}
+      <FlatList
+        data={paginated}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => openDetail(item)} style={styles.card}>
+            <Text style={styles.name}>{item.patients.profiles.full_name}</Text>
+            <Text>{item.status.toUpperCase()} | {item.risk_predictions?.[0]?.risk_category.toUpperCase()}</Text>
+            <Text>{new Date(item.submitted_at).toLocaleDateString()}</Text>
+        
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+              <MessageSquare size={18} color="#0066CC" />
+              
+              <TouchableOpacity
+                onPress={() => router.push(`/chat/${item.patients.id}`)}
+                style={{ padding: 8 }}
               >
-                <Text
-                  style={[
-                    styles.statusText,
-                    submission.status === 'reviewed'
-                      ? styles.statusTextReviewed
-                      : styles.statusTextPending,
-                  ]}
-                >
-                  {submission.status}
-                </Text>
-              </View>
+                <MessageCircle size={20} color="#0066CC" />
+              </TouchableOpacity>
             </View>
-            
-            {submission.risk_predictions?.[0] && (
-              <View style={styles.riskInfo}>
-                <Text style={styles.riskLabel}>Risk Assessment:</Text>
-                <Text
-                  style={[
-                    styles.riskValue,
-                    {
-                      color: getRiskColor(
-                        submission.risk_predictions[0].risk_category
-                      ),
-                    },
-                  ]}
-                >
-                  {submission.risk_predictions[0].risk_category.toUpperCase()} (
-                  {submission.risk_predictions[0].risk_score})
-                </Text>
-              </View>
-            )}
-            
-            <Text style={styles.submissionDate}>
-              {new Date(submission.submitted_at).toLocaleDateString()}
-            </Text>
           </TouchableOpacity>
-        ))}
+        )}
+      />
+
+      <View style={styles.pagination}>
+        <TouchableOpacity onPress={() => setCurrentPage(p => Math.max(1, p - 1))}><Text>Prev</Text></TouchableOpacity>
+        <Text>Page {currentPage}</Text>
+        <TouchableOpacity onPress={() => setCurrentPage(p => p + 1)}><Text>Next</Text></TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        style={styles.viewAllButton}
-        onPress={() => router.push('/patients')}
-      >
-        <TrendingUp size={20} color="#0066CC" />
-        <Text style={styles.viewAllButtonText}>View All Patients</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      <Modal visible={modalVisible} animationType="slide">
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Submission Detail</Text>
+          <Text>{selectedSubmission?.patients.profiles.full_name}</Text>
+          <Text>Status: {selectedSubmission?.status}</Text>
+          <Text>Risk: {selectedSubmission?.risk_predictions?.[0]?.risk_category}</Text>
+
+          <TextInput
+            multiline
+            numberOfLines={4}
+            placeholder="Add notes..."
+            value={noteText}
+            onChangeText={setNoteText}
+            style={styles.noteInput}
+          />
+
+          <TouchableOpacity onPress={saveNote}><Text>Save Note</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setModalVisible(false)}><Text>Close</Text></TouchableOpacity>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+  container: { flex: 1, padding: 16, backgroundColor: 'white' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  card: {
     padding: 16,
-    alignItems: 'center',
-    minWidth: '47%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statIconContainer: {
-    marginBottom: 8,
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    textAlign: 'center',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  submissionCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  criticalCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#DC3545',
-  },
-  submissionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  patientName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
+  name: { fontWeight: 'bold', fontSize: 16 },
+  searchSortRow: { flexDirection: 'row', gap: 12, marginBottom: 12, alignItems: 'center' },
+  searchInput: {
     flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
+    borderRadius: 8,
   },
-  riskBadge: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  riskBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#DC3545',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusReviewed: {
-    backgroundColor: '#D1FAE5',
-  },
-  statusPending: {
-    backgroundColor: '#FEF3C7',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
-  statusTextReviewed: {
-    color: '#065F46',
-  },
-  statusTextPending: {
-    color: '#92400E',
-  },
-  riskInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  riskLabel: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  riskValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  submissionDate: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 6,
-  },
-  actionButtonText: {
-    color: '#0066CC',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  viewAllButton: {
-    backgroundColor: 'white',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#0066CC',
-    gap: 8,
-    marginBottom: 24,
-  },
-  viewAllButtonText: {
-    color: '#0066CC',
-    fontWeight: '600',
+  pagination: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 16 },
+  modalContainer: { flex: 1, padding: 20, backgroundColor: 'white' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+  noteInput: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 12,
+    minHeight: 100,
+    textAlignVertical: 'top',
   },
 });

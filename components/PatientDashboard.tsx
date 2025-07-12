@@ -11,11 +11,11 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, TrendingUp, Plus, Target, Award, Zap, Calendar, ArrowRight } from 'lucide-react';
+import { Heart, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, TrendingUp, Plus, Target, Award, Zap, Calendar, ArrowRight } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import AssessmentList from './AssessmentList';
-import { DiabetesQuickActions } from './DiabetesQuickActions.tsx';
+import { DiabetesQuickActions } from './DiabetesQuickActions';
 import { DiabetesManagementCard } from './DiabetesManagementCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -71,8 +71,7 @@ export function PatientDashboard() {
         .single();
 
       if (!patientData) {
-        // It's possible a new user has no patient record yet.
-        // Don't throw an error, just return. The dashboard will show the "Get Started" card.
+        
         setLoading(false);
         return;
       }
