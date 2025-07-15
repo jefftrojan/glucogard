@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Chrome as Home, Activity, MapPin, User } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
-import { Users, MessageSquare, Database, BarChart3 } from 'lucide-react-native';
+import { Users, MessageSquare, Database, ChartBar as BarChart3 } from 'lucide-react-native';
 
 import { View } from 'react-native';
 

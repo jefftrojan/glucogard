@@ -13,23 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  MessageSquare, 
-  Eye, 
-  Calendar,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  ChevronRight,
-  X,
-  Stethoscope,
-  Heart,
-  Activity
-} from 'lucide-react-native';
+import { Users, Search, Filter, MessageSquare, Eye, Calendar, Clock, TrendingUp, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, ChevronRight, X, Stethoscope, Heart, Activity } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 

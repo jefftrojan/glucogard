@@ -10,28 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  AlertTriangle, 
-  Clock, 
-  Calendar,
-  Activity,
-  Heart,
-  Target,
-  Zap,
-  CheckCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  MapPin,
-  Stethoscope,
-  Database,
-  Eye,
-  MessageSquare,
-  FileText,
-  Award
-} from 'lucide-react-native';
+import { ChartBar as BarChart3, TrendingUp, Users, TriangleAlert as AlertTriangle, Clock, Calendar, Activity, Heart, Target, Zap, CircleCheck as CheckCircle, ArrowUpRight, ArrowDownRight, MapPin, Stethoscope, Database, Eye, MessageSquare, FileText, Award } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { generatePublicHealthMetrics, type PublicHealthMetrics } from '@/lib/research';
 
