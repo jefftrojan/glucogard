@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Activity, MapPin, User } from 'lucide-react-native';
+import { Chrome as Home, Activity, MapPin, MessageSquare } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { Users, MessageSquare, Database, ChartBar as BarChart3 } from 'lucide-react-native';
 
@@ -57,16 +57,16 @@ export default function TabLayout() {
           <Tabs.Screen
             name="research"
             options={{
-              title: 'Research',
+              title: 'Research Portal',
               tabBarIcon: ({ size, color }) => <Database size={size} color={color} />,
             }}
           />
 
           <Tabs.Screen
-            name="profile"
+            name="chats"
             options={{
-              title: 'Profile',
-              tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+              title: 'Chats',
+              tabBarIcon: ({ size, color }) => <MessageSquare size={size} color={color} />,
             }}
           />
         </>
@@ -98,10 +98,10 @@ export default function TabLayout() {
           />
 
           <Tabs.Screen
-            name="profile"
+            name="chats"
             options={{
-              title: 'Profile',
-              tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+              title: 'Chats',
+              tabBarIcon: ({ size, color }) => <MessageSquare size={size} color={color} />,
             }}
           />
         </>
@@ -117,7 +117,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="research"
         options={{
-          href: null, // Hide from tab bar for patients
+          href: null, // Hide from tab bar for patients 
         }}
       />
       <Tabs.Screen
@@ -142,6 +142,12 @@ export default function TabLayout() {
         name="ResultsScreen"
         options={{
           href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null, // Hide from tab bar but keep the screen
         }}
       />
     </Tabs>
