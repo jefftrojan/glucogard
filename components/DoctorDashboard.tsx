@@ -1,62 +1,107 @@
-// DoctorDashboard.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  TextInput,
-  Modal,
-  FlatList,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MessageSquare, Eye, MessageCircle,Users, Clock, TrendingUp } from 'lucide-react-native';
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Users, 
+  AlertTriangle, 
+  Clock, 
+  Calendar,
+  Activity,
+  Heart,
+  Target,
+  Zap,
+  CheckCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  MapPin,
+  Stethoscope,
+  Database,
+  Eye,
+  MessageSquare,
+  FileText,
+  Award
+} from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { generatePublicHealthMetrics, type PublicHealthMetrics } from '@/lib/research';
 
-interface SubmissionWithPatient {
-  id: string;
-  status: string | null;
-  submitted_at?: string | null;
-  notes?: string;
-  patient_id?: string;
-  patients?: {
-    id: string;
-    profiles: {
-      full_name: string;
-    };
-  };
-  risk_predictions?: {
-    risk_score: number;
-    risk_category: string;
-  }[];
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+
+interface DashboardStats {
+  totalPatients: number;
+  pendingReviews: number;
+  criticalCases: number;
+  monthlyAssessments: number;
+  averageRiskScore: number;
+  weeklyGrowth: number;
+  completionRate: number;
+}
+
+interface TrendData {
+  label: string;
+  value: number;
+  change: number;
+  trend: 'up' | 'down' | 'stable';
 }
 
 export default function DoctorDashboard() {
   const router = useRouter();
-  const [submissions, setSubmissions] = useState<SubmissionWithPatient[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPatients: 0,
+    pendingReviews: 0,
+    criticalCases: 0,
+    monthlyAssessments: 0,
+    averageRiskScore: 0,
+    weeklyGrowth: 0,
+    completionRate: 0,
+  });
+  const [metrics, setMetrics] = useState<PublicHealthMetrics | null>(null);
+  const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [selectedSort, setSelectedSort] = useState<'date' | 'name' | 'risk'>('date');
-  const [currentPage, setCurrentPage] = useState(1);
-  const perPage = 5;
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedSubmission, setSelectedSubmission] = useState<SubmissionWithPatient | null>(null);
-  const [noteText, setNoteText] = useState('');
 
   useEffect(() => {
-    fetchSubmissions();
+    loadDashboardData();
   }, []);
 
-  const fetchSubmissions = async () => {
+  const loadDashboardData = async () => {
+    setLoading(true);
     try {
-      const { data: submissionsData } = await supabase
+      await Promise.all([
+        loadPatientStats(),
+        loadPublicHealthMetrics(),
+      ]);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPatientStats = async () => {
+    try {
+      const { data: submissions } = await supabase
         .from('health_submissions')
         .select(`
           id,
           status,
           submitted_at,
-          patient_id,
+          patients!inner (
+            id,
+            profiles!inner (
+              full_name
+            )
+          ),
           risk_predictions (
             risk_score,
             risk_category
@@ -64,336 +109,567 @@ export default function DoctorDashboard() {
         `)
         .order('submitted_at', { ascending: false });
 
-      const patientIds = submissionsData?.map(s => s.patient_id) ?? [];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name
-        `)
-        .in('id', patientIds);
+      if (submissions) {
+        const uniquePatients = new Set(submissions.map(s => s.patients.id));
+        const pendingReviews = submissions.filter(s => s.status === 'pending').length;
+        const criticalCases = submissions.filter(
+          s => s.risk_predictions?.[0]?.risk_category === 'critical'
+        ).length;
+        
+        const thisMonth = new Date();
+        thisMonth.setDate(1);
+        const monthlyAssessments = submissions.filter(
+          s => new Date(s.submitted_at) >= thisMonth
+        ).length;
 
-      const submissionsWithPatients = submissionsData?.map(submission => {
-        const profile = profilesData?.find(p => p.id === submission.patient_id);
-        const patient = {
-          id: submission.patient_id,
-          profiles: {
-            full_name: profile?.full_name ?? 'Unknown Patient'
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        lastMonth.setDate(1);
+        const lastMonthEnd = new Date(thisMonth);
+        lastMonthEnd.setDate(0);
+        
+        const lastMonthAssessments = submissions.filter(
+          s => new Date(s.submitted_at) >= lastMonth && new Date(s.submitted_at) <= lastMonthEnd
+        ).length;
+
+        const weeklyGrowth = lastMonthAssessments > 0 
+          ? ((monthlyAssessments - lastMonthAssessments) / lastMonthAssessments) * 100
+          : 0;
+
+        const totalRiskScore = submissions.reduce(
+          (sum, s) => sum + (s.risk_predictions?.[0]?.risk_score || 0),
+          0
+        );
+        const averageRiskScore = submissions.length > 0 
+          ? Math.round(totalRiskScore / submissions.length) 
+          : 0;
+
+        const reviewedCount = submissions.filter(s => s.status === 'reviewed').length;
+        const completionRate = submissions.length > 0 
+          ? Math.round((reviewedCount / submissions.length) * 100)
+          : 0;
+
+        setStats({
+          totalPatients: uniquePatients.size,
+          pendingReviews,
+          criticalCases,
+          monthlyAssessments,
+          averageRiskScore,
+          weeklyGrowth,
+          completionRate,
+        });
+
+        // Generate trend data
+        setTrendData([
+          {
+            label: 'New Patients',
+            value: monthlyAssessments,
+            change: weeklyGrowth,
+            trend: weeklyGrowth > 0 ? 'up' : weeklyGrowth < 0 ? 'down' : 'stable'
+          },
+          {
+            label: 'Avg Risk Score',
+            value: averageRiskScore,
+            change: -5.2, // Mock data
+            trend: 'down'
+          },
+          {
+            label: 'Review Rate',
+            value: completionRate,
+            change: 12.3, // Mock data
+            trend: 'up'
           }
-        };
-        return { ...submission, patients: patient };
-      }) ?? [];
-
-      setSubmissions(submissionsWithPatients);
+        ]);
+      }
     } catch (error) {
-      console.error('Error fetching submissions:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading patient stats:', error);
     }
   };
 
-  const sortSubmissions = (list: SubmissionWithPatient[]) => {
-    switch (selectedSort) {
-      case 'name':
-        return [...list].sort((a, b) => (a.patients?.profiles.full_name ?? '').localeCompare(b.patients?.profiles.full_name ?? ''));
-      case 'risk':
-        return [...list].sort((a, b) => (b.risk_predictions?.[0]?.risk_score || 0) - (a.risk_predictions?.[0]?.risk_score || 0));
-      default:
-        return [...list].sort((a, b) => (new Date(b.submitted_at ?? '').getTime() - new Date(a.submitted_at ?? '').getTime()));
+  const loadPublicHealthMetrics = async () => {
+    try {
+      const data = await generatePublicHealthMetrics();
+      setMetrics(data);
+    } catch (error) {
+      console.error('Error loading public health metrics:', error);
     }
-  };
-
-  const filtered = submissions.filter(s =>
-    (s.patients?.profiles.full_name ?? '').toLowerCase().includes(search.toLowerCase())
-  );
-
-  const sorted = sortSubmissions(filtered);
-  const paginated = sorted.slice((currentPage - 1) * perPage, currentPage * perPage);
-
-  const openDetail = (submission: SubmissionWithPatient) => {
-    setSelectedSubmission(submission);
-    setNoteText('');
-    setModalVisible(true);
-  };
-
-  const saveNote = async () => {
-    if (!selectedSubmission) return;
-    // The 'notes' field does not exist in the table, so this function is a no-op.
-    setModalVisible(false);
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0066CC" />
+        <Text style={styles.loadingText}>Loading analytics...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchSortRow}>
-        <TextInput
-          placeholder="Search patient..."
-          value={search}
-          onChangeText={setSearch}
-          style={styles.searchInput}
-        />
-        {['date', 'name', 'risk'].map(option => (
-          <TouchableOpacity
-            key={option}
-            onPress={() => setSelectedSort(option as 'date' | 'name' | 'risk')}
-            style={[
-              styles.sortButton,
-              selectedSort === option && styles.sortButtonActive
-            ]}
-          >
-            <Text style={selectedSort === option ? styles.sortTextActive : styles.sortText}>
-              {option.charAt(0).toUpperCase() + option.slice(1)}
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerIcon}>
+            <BarChart3 size={24} color="#0066CC" />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>Analytics Dashboard</Text>
+            <Text style={styles.headerSubtitle}>Real-time health insights</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.refreshButton} onPress={loadDashboardData}>
+          <Activity size={20} color="#0066CC" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Bento Grid Layout */}
+      <View style={styles.bentoGrid}>
+        {/* Large Stats Card */}
+        <View style={[styles.bentoCard, styles.largeCard]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Patient Overview</Text>
+            <Users size={20} color="#0066CC" />
+          </View>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{stats.totalPatients}</Text>
+              <Text style={styles.statLabel}>Total Patients</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: '#FFA500' }]}>{stats.pendingReviews}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statNumber, { color: '#DC3545' }]}>{stats.criticalCases}</Text>
+              <Text style={styles.statLabel}>Critical</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Monthly Assessments */}
+        <View style={[styles.bentoCard, styles.mediumCard]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>This Month</Text>
+            <Calendar size={20} color="#28A745" />
+          </View>
+          <Text style={styles.bigNumber}>{stats.monthlyAssessments}</Text>
+          <View style={styles.trendIndicator}>
+            {stats.weeklyGrowth > 0 ? (
+              <ArrowUpRight size={16} color="#28A745" />
+            ) : (
+              <ArrowDownRight size={16} color="#DC3545" />
+            )}
+            <Text style={[
+              styles.trendText,
+              { color: stats.weeklyGrowth > 0 ? '#28A745' : '#DC3545' }
+            ]}>
+              {Math.abs(stats.weeklyGrowth).toFixed(1)}%
             </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+          </View>
+        </View>
 
-      <FlatList
-        data={paginated}
-        keyExtractor={item => item.id}
-renderItem={({ item }) => (
-  <View style={styles.card}>
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <Users size={30} color="#0066CC" />
-      <View style={{ marginLeft: 10 }}>
-        <Text style={styles.name}>{item.patients?.profiles.full_name ?? 'Unknown Patient'}</Text>
-        <Text style={styles.dateText}>
-          <Clock size={12} color="#999" /> {item.submitted_at ? new Date(item.submitted_at).toLocaleDateString() : 'Unknown Date'}
-        </Text>
-      </View>
-    </View>
+        {/* Average Risk Score */}
+        <View style={[styles.bentoCard, styles.mediumCard]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Avg Risk</Text>
+            <Target size={20} color="#9B59B6" />
+          </View>
+          <Text style={styles.bigNumber}>{stats.averageRiskScore}</Text>
+          <Text style={styles.cardSubtext}>out of 100</Text>
+        </View>
 
-    <View style={styles.cardRow}>
-      <Text style={styles.statusBadge}>{item.status ?? 'N/A'}</Text>
-      <Text style={styles.riskBadge}>
-        {item.risk_predictions?.[0]?.risk_category?.toUpperCase() ?? 'N/A'}
-      </Text>
-    </View>
+        {/* Trend Analysis */}
+        <View style={[styles.bentoCard, styles.wideCard]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Key Trends</Text>
+            <TrendingUp size={20} color="#0066CC" />
+          </View>
+          <View style={styles.trendsContainer}>
+            {trendData.map((trend, index) => (
+              <View key={index} style={styles.trendItem}>
+                <Text style={styles.trendLabel}>{trend.label}</Text>
+                <View style={styles.trendValue}>
+                  <Text style={styles.trendNumber}>{trend.value}</Text>
+                  <View style={[
+                    styles.trendBadge,
+                    { backgroundColor: trend.trend === 'up' ? '#D1FAE5' : '#FEE2E2' }
+                  ]}>
+                    {trend.trend === 'up' ? (
+                      <ArrowUpRight size={12} color="#065F46" />
+                    ) : (
+                      <ArrowDownRight size={12} color="#991B1B" />
+                    )}
+                    <Text style={[
+                      styles.trendChangeText,
+                      { color: trend.trend === 'up' ? '#065F46' : '#991B1B' }
+                    ]}>
+                      {Math.abs(trend.change).toFixed(1)}%
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
 
-    <View style={styles.cardRow}>
-      <TrendingUp size={16} color="#FF6B6B" />
-      <Text style={styles.scoreText}>
-        Risk Score: {item.risk_predictions?.[0]?.risk_score ?? 'N/A'}
-      </Text>
-    </View>
-
-    <View style={styles.cardFooter}>
-        <TouchableOpacity 
-          onPress={() => {
-            const patientId = item.patients?.id;
-            if (patientId) {
-              router.push(`/chat/${patientId}`);
-            } else {
-              alert('Patient ID missing, cannot open chat');
-            }
-          }}
-          
-          style={styles.actionButton}
-        >
-        <MessageCircle size={20} color="#0066CC" />
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => openDetail(item)}
-        style={styles.actionButton}
-      >
-        <Eye size={20} color="#555" />
-      </TouchableOpacity>
-    </View>
-  </View>
-)}
-        
-      />
-
-      {/* Custom Pagination */}
-      <View style={styles.customPagination}>
-        <TouchableOpacity onPress={() => setCurrentPage(p => Math.max(1, p - 1))}>
-          <Text style={styles.paginationButton}>← Prev</Text>
-        </TouchableOpacity>
-        <Text style={styles.paginationText}>Page {currentPage}</Text>
-        <TouchableOpacity onPress={() => setCurrentPage(p => p + 1)}>
-          <Text style={styles.paginationButton}>Next →</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Modal */}
-      <Modal visible={modalVisible} animationType="slide">
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Submission Detail</Text>
-          <Text>{selectedSubmission?.patients?.profiles.full_name ?? 'Unknown Patient'}</Text>
-          <Text>Status: {selectedSubmission?.status}</Text>
-          <Text>Risk: {selectedSubmission?.risk_predictions?.[0]?.risk_category}</Text>
-
-          <TextInput
-            multiline
-            numberOfLines={4}
-            placeholder="Add notes..."
-            value={noteText}
-            onChangeText={setNoteText}
-            style={styles.noteInput}
-          />
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity onPress={saveNote} style={styles.saveButton}>
-              <Text style={styles.buttonText}>Save Note</Text>
+        {/* Quick Actions */}
+        <View style={[styles.bentoCard, styles.mediumCard]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Quick Actions</Text>
+            <Zap size={20} color="#FF6B35" />
+          </View>
+          <View style={styles.actionsList}>
+            <TouchableOpacity 
+              style={styles.actionItem}
+              onPress={() => router.push('/(tabs)/patients')}
+            >
+              <Eye size={16} color="#0066CC" />
+              <Text style={styles.actionText}>Review Pending</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.cancelButton}>
-              <Text style={styles.buttonText}>Close</Text>
+            <TouchableOpacity 
+              style={styles.actionItem}
+              onPress={() => router.push('/(tabs)/research')}
+            >
+              <Database size={16} color="#28A745" />
+              <Text style={styles.actionText}>Export Data</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-    </View>
+
+        {/* Completion Rate */}
+        <View style={[styles.bentoCard, styles.mediumCard]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Review Rate</Text>
+            <CheckCircle size={20} color="#28A745" />
+          </View>
+          <Text style={styles.bigNumber}>{stats.completionRate}%</Text>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill,
+                { width: `${stats.completionRate}%` }
+              ]} 
+            />
+          </View>
+        </View>
+
+        {/* Geographic Distribution */}
+        {metrics && (
+          <View style={[styles.bentoCard, styles.wideCard]}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Geographic Distribution</Text>
+              <MapPin size={20} color="#4ECDC4" />
+            </View>
+            <View style={styles.geoStats}>
+              <View style={styles.geoItem}>
+                <View style={styles.geoIndicator} />
+                <Text style={styles.geoLabel}>Urban Areas</Text>
+                <Text style={styles.geoValue}>
+                  {metrics.demographic_breakdown.urban_vs_rural.urban}
+                </Text>
+              </View>
+              <View style={styles.geoItem}>
+                <View style={[styles.geoIndicator, { backgroundColor: '#28A745' }]} />
+                <Text style={styles.geoLabel}>Rural Areas</Text>
+                <Text style={styles.geoValue}>
+                  {metrics.demographic_breakdown.urban_vs_rural.rural}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Risk Distribution */}
+        {metrics && (
+          <View style={[styles.bentoCard, styles.largeCard]}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Risk Distribution</Text>
+              <Heart size={20} color="#DC3545" />
+            </View>
+            <View style={styles.riskGrid}>
+              <View style={styles.riskItem}>
+                <View style={[styles.riskIndicator, { backgroundColor: '#28A745' }]} />
+                <Text style={styles.riskLabel}>Low Risk</Text>
+                <Text style={styles.riskValue}>{metrics.risk_distribution.low}</Text>
+              </View>
+              <View style={styles.riskItem}>
+                <View style={[styles.riskIndicator, { backgroundColor: '#FFA500' }]} />
+                <Text style={styles.riskLabel}>Moderate</Text>
+                <Text style={styles.riskValue}>{metrics.risk_distribution.moderate}</Text>
+              </View>
+              <View style={styles.riskItem}>
+                <View style={[styles.riskIndicator, { backgroundColor: '#DC3545' }]} />
+                <Text style={styles.riskLabel}>Critical</Text>
+                <Text style={styles.riskValue}>{metrics.risk_distribution.critical}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Achievement Card */}
+        <View style={[styles.bentoCard, styles.mediumCard, styles.achievementCard]}>
+          <Award size={32} color="#FFD700" />
+          <Text style={styles.achievementTitle}>Great Work!</Text>
+          <Text style={styles.achievementText}>
+            You've reviewed {stats.completionRate}% of assessments this month
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: 'white' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  card: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    marginBottom: 12,
-    backgroundColor: '#f9f9f9',
-  },
-  name: { fontWeight: 'bold', fontSize: 16 },
-  subInfo: { color: '#444', marginTop: 4 },
-  date: { color: '#888', fontSize: 12, marginTop: 4 },
-  cardActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  searchSortRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  searchInput: {
+  container: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 8,
-    marginRight: 8,
+    backgroundColor: '#F8FAFB',
   },
-  sortButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: '#eee',
-  },
-  sortButtonActive: {
-    backgroundColor: '#0066CC',
-  },
-  sortText: {
-    color: '#333',
-  },
-  sortTextActive: {
-    color: 'white',
-  },
-  customPagination: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderColor: '#eee',
-    marginTop: 12,
+    gap: 16,
   },
-  paginationButton: {
-    fontWeight: 'bold',
-    color: '#0066CC',
-  },
-  paginationText: {
+  loadingText: {
     fontSize: 16,
+    color: '#64748B',
   },
-  modalContainer: { flex: 1, padding: 20, backgroundColor: 'white' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  noteInput: {
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 12,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  modalButtons: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  saveButton: {
-    backgroundColor: '#0066CC',
-    padding: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 8,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  cancelButton: {
-    backgroundColor: '#ccc',
-    padding: 12,
-    borderRadius: 8,
-    flex: 1,
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EBF4FF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  buttonText: {
-    color: 'white',
-    textAlign: 'center',
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#1E293B',
   },
-
-  
-  
-  dateText: {
-    fontSize: 12,
-    color: '#777',
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
     marginTop: 2,
   },
-  cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EBF4FF',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  scoreText: {
-    marginLeft: 8,
-    fontSize: 13,
-    color: '#444',
-  },
-  statusBadge: {
-    backgroundColor: '#C8E6C9', // Default for reviewed
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    color: '#333',
-    fontWeight: '600',
-  },
-  riskBadge: {
-    backgroundColor: '#E0E0E0', // Default
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    color: '#333',
-    fontWeight: '600',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  bentoGrid: {
+    padding: 24,
     gap: 16,
-    marginTop: 10,
   },
-  actionButton: {
-    padding: 8,
+  bentoCard: {
+    backgroundColor: 'white',
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  
-
+  largeCard: {
+    minHeight: 160,
+  },
+  mediumCard: {
+    minHeight: 120,
+  },
+  wideCard: {
+    minHeight: 140,
+  },
+  achievementCard: {
+    backgroundColor: '#FFF9E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  cardSubtext: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  bigNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  trendIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  trendsContainer: {
+    gap: 12,
+  },
+  trendItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  trendLabel: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  trendValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trendNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 2,
+  },
+  trendChangeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  actionsList: {
+    gap: 12,
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#28A745',
+    borderRadius: 3,
+  },
+  geoStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  geoItem: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  geoIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#0066CC',
+  },
+  geoLabel: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  geoValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  riskGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  riskItem: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  riskIndicator: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  riskLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  riskValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  achievementTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  achievementText: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });

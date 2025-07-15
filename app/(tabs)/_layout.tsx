@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Chrome as Home, Activity, MapPin, User } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
+import { Users, MessageSquare, Database, BarChart3 } from 'lucide-react-native';
 
 import { View } from 'react-native';
 
@@ -35,50 +36,100 @@ export default function TabLayout() {
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
-        }}
-      />
-      
-      <Tabs.Screen
-        name="assessment"
-        options={{
-          title: 'Health Check',
-          tabBarIcon: ({ size, color }) => <Activity size={size} color={color} />,
-          href: user?.role === 'patient' ? '/assessment' : null,
-        }}
-      />
+      {user?.role === 'doctor' ? (
+        <>
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: 'Analytics',
+              tabBarIcon: ({ size, color }) => <BarChart3 size={size} color={color} />,
+            }}
+          />
+          
+          <Tabs.Screen
+            name="patients"
+            options={{
+              title: 'Patients',
+              tabBarIcon: ({ size, color }) => <Users size={size} color={color} />,
+            }}
+          />
 
-      <Tabs.Screen
-        name="location"
-        options={{
-          title: 'Health Map',
-          tabBarIcon: ({ size, color }) => <MapPin size={size} color={color} />,
-        }}
-      />
+          <Tabs.Screen
+            name="research"
+            options={{
+              title: 'Research',
+              tabBarIcon: ({ size, color }) => <Database size={size} color={color} />,
+            }}
+          />
 
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
-        }}
-      />
+          <Tabs.Screen
+            name="profile"
+            options={{
+              title: 'Profile',
+              tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: 'Home',
+              tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
+            }}
+          />
+          
+          <Tabs.Screen
+            name="assessment"
+            options={{
+              title: 'Health Check',
+              tabBarIcon: ({ size, color }) => <Activity size={size} color={color} />,
+              href: user?.role === 'patient' ? '/assessment' : null,
+            }}
+          />
+
+          <Tabs.Screen
+            name="location"
+            options={{
+              title: 'Health Map',
+              tabBarIcon: ({ size, color }) => <MapPin size={size} color={color} />,
+            }}
+          />
+
+          <Tabs.Screen
+            name="profile"
+            options={{
+              title: 'Profile',
+              tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+            }}
+          />
+        </>
+      )}
       
       {/* Hidden screens that don't appear in tabs */}
       <Tabs.Screen
+        name="patients"
+        options={{
+          href: null, // Hide from tab bar for patients
+        }}
+      />
+      <Tabs.Screen
         name="research"
         options={{
-          href: null, // Hide from tab bar
+          href: null, // Hide from tab bar for patients
         }}
       />
       <Tabs.Screen
         name="diabetes-dashboard"
         options={{
           href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="assessment"
+        options={{
+          href: null, // Hide from tab bar for doctors
         }}
       />
       <Tabs.Screen
