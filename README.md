@@ -222,7 +222,7 @@ glucogard/
 ├── app/                     # Main application code (screens, navigation)
 │   ├── (tabs)/              # Tab-based navigation layout
 │   ├── auth/                # Authentication screens
-│   ├── web-dashboard/       # Web dashboard for doctors
+│   ├── chat/                # [patientId].tsx
 │   ├── research-portal/     # Public research portal
 │   ├── _layout.tsx          # Root layout
 │   └── index.tsx            # Entry point for the app
